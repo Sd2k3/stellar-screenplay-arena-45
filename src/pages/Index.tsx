@@ -15,6 +15,7 @@ import {
   upsertPlayerTokenBalance, 
   getPlayerTokenBalance 
 } from "@/integrations/supabase/blockchainApi";
+import BlockchainSelector from "@/components/blockchain/BlockchainSelector";
 
 const Index = () => {
   const [currentScore, setCurrentScore] = useState(0);
@@ -22,7 +23,8 @@ const Index = () => {
   const [gamesPlayed, setGamesPlayed] = useState(0);
   const [tokensEarned, setTokensEarned] = useState(0);
   const [pendingTokens, setPendingTokens] = useState(0);
-  
+  const [blockchain, setBlockchain] = useState<"ethereum" | "polygon">("ethereum");
+
   const { 
     isConnected, 
     isConnecting, 
@@ -31,7 +33,11 @@ const Index = () => {
     disconnectWallet 
   } = useWalletConnection();
 
-  // Sync player's token balance from Supabase when connected
+  const blockchainLabel =
+    blockchain === "ethereum"
+      ? "Ethereum (Goerli Testnet)"
+      : "Polygon (Mumbai Testnet)";
+
   useEffect(() => {
     if (isConnected && address) {
       getPlayerTokenBalance(address).then(balanceRow => {
@@ -43,7 +49,6 @@ const Index = () => {
     }
   }, [isConnected, address]);
 
-  // Handle game over
   const handleGameOver = async (finalScore: number) => {
     setGamesPlayed(prev => prev + 1);
     if (finalScore > highScore) {
@@ -54,7 +59,6 @@ const Index = () => {
     setPendingTokens(prev => prev + newTokens);
 
     if (isConnected && address && newTokens > 0) {
-      // Write blockchain transaction, update balance as pending
       try {
         const tx = await createBlockchainTransaction({
           walletAddress: address,
@@ -68,13 +72,11 @@ const Index = () => {
           pendingAmount: pendingTokens + newTokens
         });
 
-        // (Optional) Could also record on-chain achievement here if milestones met
       } catch (err) {
         console.error("Blockchain tx error", err);
       }
     }
 
-    // Simulate verification after delay & update in Supabase
     setTimeout(async () => {
       setTokensEarned(prev => prev + newTokens);
       setPendingTokens(prev => prev - newTokens);
@@ -89,7 +91,6 @@ const Index = () => {
     }, 5000);
   };
 
-  // Mock achievements data
   const [achievements, setAchievements] = useState<Achievement[]>([
     {
       id: "1",
@@ -116,13 +117,11 @@ const Index = () => {
       verificationStatus: "pending"
     }
   ]);
-  
-  // Update achievements based on game progress
+
   useEffect(() => {
     let updatedAchievements = [...achievements];
     let changed = false;
     
-    // Check for "Stellar Novice" achievement
     if (currentScore >= 100 && !achievements[0].completed) {
       updatedAchievements[0] = {
         ...updatedAchievements[0],
@@ -133,7 +132,6 @@ const Index = () => {
       changed = true;
     }
     
-    // Check for "Cosmic Explorer" achievement
     if (currentScore >= 200 && !achievements[1].completed) {
       updatedAchievements[1] = {
         ...updatedAchievements[1],
@@ -144,7 +142,6 @@ const Index = () => {
       changed = true;
     }
     
-    // Check for "Token Collector" achievement
     if (tokensEarned >= 50 && !achievements[2].completed) {
       updatedAchievements[2] = {
         ...updatedAchievements[2],
@@ -160,15 +157,11 @@ const Index = () => {
     }
   }, [currentScore, tokensEarned, achievements]);
 
-  // When an achievement is completed, record it on chain in Supabase
   useEffect(() => {
     if (isConnected && address) {
       achievements.forEach(async (a) => {
         if (a.completed && a.verificationStatus === "verified") {
-          // Check if already stored (skip if so)
-          // A real implementation may call Supabase for existence
           try {
-            // Record as an "on chain" achievement, link to last tx if available
             const lastTx = await createBlockchainTransaction({
               walletAddress: address,
               type: "achievement",
@@ -187,11 +180,8 @@ const Index = () => {
         }
       });
     }
-    // Only run if address or achievements change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [achievements, isConnected, address]);
-  
-  // Mock leaderboard data
+
   const leaderboardEntries = [
     { 
       id: "1", 
@@ -233,14 +223,22 @@ const Index = () => {
   return (
     <div className="min-h-screen space-gradient">
       <div className="container mx-auto py-8">
-        {/* Header */}
         <header className="mb-8 text-center">
           <h1 className="text-4xl font-bold mb-2 text-white tracking-tight">Stellar Screenplay Arena</h1>
           <p className="text-lg text-slate-300">Play, earn Stellar tokens, and climb the leaderboard!</p>
         </header>
         
+        <div className="mb-4 flex items-center justify-end gap-3">
+          <BlockchainSelector
+            value={blockchain}
+            onChange={val => setBlockchain(val as "ethereum" | "polygon")}
+          />
+          <span className="ml-4 px-3 py-1 rounded-full bg-space-stellar-blue/70 text-white text-xs font-semibold">
+            Network: {blockchainLabel}
+          </span>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main game area */}
           <div className="lg:col-span-2">
             <GameCanvas 
               onScoreUpdate={setCurrentScore}
@@ -257,7 +255,6 @@ const Index = () => {
             </Alert>
           </div>
           
-          {/* Side panel */}
           <div className="flex flex-col gap-4">
             <TokenBalance 
               balance={tokensEarned}
@@ -314,10 +311,16 @@ const Index = () => {
                isConnected ? `Connected: ${address}` : 
                "Connect Blockchain Wallet"}
             </Button>
+            {isConnected && (
+              <div className="mt-2 flex items-center gap-2 text-xs text-white">
+                <span className="px-2 py-1 rounded bg-space-cosmic-purple/70">
+                  On {blockchainLabel}
+                </span>
+              </div>
+            )}
           </div>
         </div>
         
-        {/* Footer with blockchain info */}
         <footer className="mt-10 text-center text-slate-400 text-sm">
           <p>Achievements tracked on Monad blockchain and verified via Screenpipe.</p>
           <p className="mt-1">©2025 Stellar Screenplay Arena</p>
