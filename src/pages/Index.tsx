@@ -19,9 +19,9 @@ import BlockchainSelector from "@/components/blockchain/BlockchainSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import NameDialog from "@/components/game/NameDialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Tables } from "@/integrations/supabase/types";
 
-// Local storage keys
 const STORAGE_KEYS = {
   HIGH_SCORE: 'stellar_high_score',
   GAMES_PLAYED: 'stellar_games_played',
@@ -57,7 +57,6 @@ const Index = () => {
       ? "Ethereum (Goerli Testnet)"
       : "Polygon (Mumbai Testnet)";
 
-  // Load saved data from localStorage when component mounts
   useEffect(() => {
     const savedHighScore = localStorage.getItem(STORAGE_KEYS.HIGH_SCORE);
     const savedGamesPlayed = localStorage.getItem(STORAGE_KEYS.GAMES_PLAYED);
@@ -267,7 +266,6 @@ const Index = () => {
     saveScore(finalScore, null);
   };
 
-  // --- Enhanced Achievements! ---
   const [achievements, setAchievements] = useState<Achievement[]>([
     {
       id: "1",
@@ -339,7 +337,6 @@ const Index = () => {
     let updatedAchievements = [...achievements];
     let changed = false;
 
-    // Score based achievements
     if (currentScore >= 100 && !achievements[0].completed) {
       updatedAchievements[0] = {
         ...updatedAchievements[0],
@@ -377,7 +374,6 @@ const Index = () => {
       changed = true;
     }
 
-    // Token total achievements (uses tokensEarned - lifetime!)
     if (tokensEarned >= 50 && !achievements[4].completed) {
       updatedAchievements[4] = {
         ...updatedAchievements[4],
@@ -396,7 +392,6 @@ const Index = () => {
       };
       changed = true;
     }
-    // Play 10 games
     if (gamesPlayed >= 10 && !achievements[6].completed) {
       updatedAchievements[6] = {
         ...updatedAchievements[6],
@@ -407,9 +402,6 @@ const Index = () => {
       changed = true;
     }
 
-    // Unbreakable: player collects 20 tokens in a game without dying.
-    // For demo uses, use currentScore and pendingTokens in this run as a naive check
-    // (In a full-featured version, you'd need to track tokens per run and collisions)
     if (currentScore > 0 && !achievements[7].completed) {
       const sessionTokensCollected = Math.floor(currentScore / 10);
       if (sessionTokensCollected >= 20) {
@@ -495,20 +487,26 @@ const Index = () => {
               </TabsList>
               
               <TabsContent value="achievements" className="mt-2 space-y-3">
-                {achievements.map(achievement => (
-                  <AchievementCard 
-                    key={achievement.id} 
-                    achievement={achievement}
-                    className="border border-space-stellar-blue bg-black/30 text-white"
-                  />
-                ))}
+                <ScrollArea className="max-h-[410px] w-full pr-2">
+                  <div className="flex flex-col gap-3">
+                    {achievements.map(achievement => (
+                      <AchievementCard 
+                        key={achievement.id} 
+                        achievement={achievement}
+                        className="border border-space-stellar-blue bg-black/30 text-white"
+                      />
+                    ))}
+                  </div>
+                </ScrollArea>
               </TabsContent>
               
               <TabsContent value="leaderboard" className="mt-2">
-                <Leaderboard 
-                  entries={leaderboardEntries}
-                  className="border border-space-stellar-blue bg-black/30 text-white"
-                />
+                <ScrollArea className="max-h-[410px] w-full pr-2">
+                  <Leaderboard 
+                    entries={leaderboardEntries}
+                    className="border border-space-stellar-blue bg-black/30 text-white"
+                  />
+                </ScrollArea>
               </TabsContent>
             </Tabs>
             
@@ -533,10 +531,10 @@ const Index = () => {
           </div>
         </div>
 
-      <NameDialog
-        open={shouldShowNameDialog}
-        onSubmit={handleNameDialogSubmit}
-      />
+        <NameDialog
+          open={shouldShowNameDialog}
+          onSubmit={handleNameDialogSubmit}
+        />
         
         <footer className="mt-10 text-center text-slate-400 text-sm">
           <p>Achievements tracked on Monad blockchain and verified via Screenpipe.</p>
