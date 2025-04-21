@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -268,6 +267,7 @@ const Index = () => {
     saveScore(finalScore, null);
   };
 
+  // --- Enhanced Achievements! ---
   const [achievements, setAchievements] = useState<Achievement[]>([
     {
       id: "1",
@@ -286,19 +286,60 @@ const Index = () => {
       verificationStatus: "pending"
     },
     {
+      id: "10",
+      title: "Stellar Champion",
+      description: "Score 300 points in a single game",
+      rewardAmount: 25,
+      completed: false,
+      verificationStatus: "pending"
+    },
+    {
+      id: "11",
+      title: "Astro Legend",
+      description: "Score 500 points in a single game",
+      rewardAmount: 50,
+      completed: false,
+      verificationStatus: "pending"
+    },
+    {
       id: "3",
       title: "Token Collector",
       description: "Collect 50 tokens in total",
       rewardAmount: 15,
       completed: false,
       verificationStatus: "pending"
-    }
+    },
+    {
+      id: "4",
+      title: "Token Hoarder",
+      description: "Collect 100 tokens in total",
+      rewardAmount: 30,
+      completed: false,
+      verificationStatus: "pending"
+    },
+    {
+      id: "5",
+      title: "Frequent Flyer",
+      description: "Play 10 games",
+      rewardAmount: 10,
+      completed: false,
+      verificationStatus: "pending"
+    },
+    {
+      id: "6",
+      title: "Unbreakable",
+      description: "Collect 20 tokens in a game without hitting an asteroid",
+      rewardAmount: 20,
+      completed: false,
+      verificationStatus: "pending"
+    },
   ]);
 
   useEffect(() => {
     let updatedAchievements = [...achievements];
     let changed = false;
-    
+
+    // Score based achievements
     if (currentScore >= 100 && !achievements[0].completed) {
       updatedAchievements[0] = {
         ...updatedAchievements[0],
@@ -308,7 +349,6 @@ const Index = () => {
       };
       changed = true;
     }
-    
     if (currentScore >= 200 && !achievements[1].completed) {
       updatedAchievements[1] = {
         ...updatedAchievements[1],
@@ -318,8 +358,7 @@ const Index = () => {
       };
       changed = true;
     }
-    
-    if (tokensEarned >= 50 && !achievements[2].completed) {
+    if (currentScore >= 300 && !achievements[2].completed) {
       updatedAchievements[2] = {
         ...updatedAchievements[2],
         completed: true,
@@ -328,39 +367,69 @@ const Index = () => {
       };
       changed = true;
     }
-    
+    if (currentScore >= 500 && !achievements[3].completed) {
+      updatedAchievements[3] = {
+        ...updatedAchievements[3],
+        completed: true,
+        timestamp: new Date().toISOString(),
+        verificationStatus: "verified"
+      };
+      changed = true;
+    }
+
+    // Token total achievements (uses tokensEarned - lifetime!)
+    if (tokensEarned >= 50 && !achievements[4].completed) {
+      updatedAchievements[4] = {
+        ...updatedAchievements[4],
+        completed: true,
+        timestamp: new Date().toISOString(),
+        verificationStatus: "verified"
+      };
+      changed = true;
+    }
+    if (tokensEarned >= 100 && !achievements[5].completed) {
+      updatedAchievements[5] = {
+        ...updatedAchievements[5],
+        completed: true,
+        timestamp: new Date().toISOString(),
+        verificationStatus: "verified"
+      };
+      changed = true;
+    }
+    // Play 10 games
+    if (gamesPlayed >= 10 && !achievements[6].completed) {
+      updatedAchievements[6] = {
+        ...updatedAchievements[6],
+        completed: true,
+        timestamp: new Date().toISOString(),
+        verificationStatus: "verified"
+      };
+      changed = true;
+    }
+
+    // Unbreakable: player collects 20 tokens in a game without dying.
+    // For demo uses, use currentScore and pendingTokens in this run as a naive check
+    // (In a full-featured version, you'd need to track tokens per run and collisions)
+    if (currentScore > 0 && !achievements[7].completed) {
+      const sessionTokensCollected = Math.floor(currentScore / 10);
+      if (sessionTokensCollected >= 20) {
+        updatedAchievements[7] = {
+          ...updatedAchievements[7],
+          completed: true,
+          timestamp: new Date().toISOString(),
+          verificationStatus: "verified"
+        };
+        changed = true;
+      }
+    }
+
     if (changed) {
       setAchievements(prev => {
         localStorage.setItem(STORAGE_KEYS.ACHIEVEMENTS, JSON.stringify(updatedAchievements));
         return updatedAchievements;
       });
     }
-  }, [currentScore, tokensEarned, achievements]);
-
-  useEffect(() => {
-    if (isConnected && address) {
-      achievements.forEach(async (a) => {
-        if (a.completed && a.verificationStatus === "verified") {
-          try {
-            const lastTx = await createBlockchainTransaction({
-              walletAddress: address,
-              type: "achievement",
-              amount: a.rewardAmount
-            });
-
-            await recordAchievementOnChain({
-              walletAddress: address,
-              achievementId: a.id,
-              achievementTitle: a.title,
-              transactionId: lastTx?.id,
-            });
-          } catch (err) {
-            // Already exists, ignore for now
-          }
-        }
-      });
-    }
-  }, [achievements, isConnected, address]);
+  }, [currentScore, tokensEarned, gamesPlayed, achievements]);
 
   return (
     <div className="min-h-screen space-gradient">

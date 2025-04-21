@@ -41,7 +41,11 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ entries, className }) => {
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={entry.avatarUrl} />
                   <AvatarFallback>
-                    {entry.username ? entry.username.substring(0, 2).toUpperCase() : "??"}
+                    {
+                      entry.username && typeof entry.username === "string" && entry.username.trim() !== ""
+                        ? entry.username.substring(0, 2).toUpperCase()
+                        : "??"
+                    }
                   </AvatarFallback>
                 </Avatar>
                 <div className="font-medium">{entry.username || "Anonymous Player"}</div>
