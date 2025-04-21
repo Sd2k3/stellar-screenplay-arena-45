@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,6 +19,7 @@ import BlockchainSelector from "@/components/blockchain/BlockchainSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import NameDialog from "@/components/game/NameDialog";
+import type { Tables } from "@/integrations/supabase/types";
 
 const Index = () => {
   const [currentScore, setCurrentScore] = useState(0);
@@ -58,20 +58,20 @@ const Index = () => {
     }
   }, [isConnected, address]);
 
-  // Fetch leaderboard data when component mounts
   useEffect(() => {
     fetchLeaderboardData();
   }, []);
 
-  // --- PATCH fetchLeaderboardData to fix Supabase type error ---
   const fetchLeaderboardData = async () => {
     try {
-      // Fetch game scores from the database
       const { data: scores, error } = await supabase
-        .from("game_scores" as any)
+        .from("game_scores")
         .select("*")
         .order("score", { ascending: false })
-        .limit(5);
+        .limit(5) as {
+          data: Tables<"game_scores">[] | null;
+          error: any;
+        };
 
       if (error) {
         console.error("Error fetching leaderboard:", error);
@@ -84,8 +84,7 @@ const Index = () => {
       }
 
       if (scores && Array.isArray(scores) && scores.length > 0) {
-        // Format scores for leaderboard display
-        const formattedEntries = scores.map((score: any, index: number) => ({
+        const formattedEntries = scores.map((score: Tables<"game_scores">, index: number) => ({
           id: score.id,
           rank: index + 1,
           username: score.wallet_address ? score.wallet_address.slice(0, 6) + "..." : "Player",
@@ -99,7 +98,6 @@ const Index = () => {
     }
   };
 
-  // Rework handleGameOver: trigger dialog for name entry if not connected
   const handleGameCanvasNameRequired = (finalScore: number) => {
     setPendingFinalScore(finalScore);
     setShouldShowNameDialog(true);
@@ -115,7 +113,6 @@ const Index = () => {
     }
   };
 
-  // Save score helper
   const saveScore = async (finalScore: number, name: string | null) => {
     setGamesPlayed(prev => prev + 1);
     if (finalScore > highScore) setHighScore(finalScore);
@@ -124,11 +121,10 @@ const Index = () => {
     setPendingTokens(prev => prev + newTokens);
 
     try {
-      // Save score to game_scores table
       const walletAddr = isConnected && address ? address : (name || "guest-player");
 
       const { error } = await supabase
-        .from("game_scores" as any)
+        .from("game_scores")
         .insert([
           {
             wallet_address: walletAddr,
@@ -151,7 +147,6 @@ const Index = () => {
         fetchLeaderboardData();
       }
 
-      // Handle blockchain transactions if connected
       if (isConnected && address && newTokens > 0) {
         try {
           const tx = await createBlockchainTransaction({
@@ -188,7 +183,6 @@ const Index = () => {
     }, 5000);
   };
 
-  // Rework handleGameOver to call saveScore or open name dialog appropriately
   const handleGameOver = (finalScore: number) => {
     if (!isConnected) {
       setPendingFinalScore(finalScore);
@@ -392,7 +386,6 @@ const Index = () => {
           </div>
         </div>
 
-      {/* Name Entry Dialog */}
       <NameDialog
         open={shouldShowNameDialog}
         onSubmit={handleNameDialogSubmit}

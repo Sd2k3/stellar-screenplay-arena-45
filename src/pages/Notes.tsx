@@ -7,14 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-
-// Define a type for our game scores since it's not automatically in the Supabase types
-interface GameScore {
-  id: string;
-  wallet_address: string;
-  score: number;
-  created_at: string;
-}
+import type { Tables } from "@/integrations/supabase/types";
 
 // Define a Note format to display the scores in a notes-like format
 interface Note {
@@ -35,11 +28,13 @@ const Notes: React.FC = () => {
   // Fetch game scores 
   useEffect(() => {
     const fetchGameScores = async () => {
-      // We need to use 'as any' because game_scores isn't in the TS defs
       const { data, error } = await supabase
-        .from("game_scores" as any)
+        .from("game_scores")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false }) as {
+          data: Tables<"game_scores">[] | null;
+          error: any;
+        };
 
       if (error) {
         toast({
@@ -49,7 +44,7 @@ const Notes: React.FC = () => {
         });
       } else if (data) {
         // Convert game_scores to notes format for display
-        const formattedNotes: Note[] = data.map((item: any) => ({
+        const formattedNotes: Note[] = data.map((item: Tables<"game_scores">) => ({
           id: item.id,
           title: `Score: ${item.score}`,
           content: `Score recorded for wallet: ${item.wallet_address}`,
@@ -67,13 +62,13 @@ const Notes: React.FC = () => {
 
     // Insert into game_scores table
     const { error } = await supabase
-      .from("game_scores" as any)
+      .from("game_scores")
       .insert([
         { 
           wallet_address: "demo-wallet-address", // Replace with actual wallet address if available
           score: parseInt(title) || 0 // Convert title to score number
         }
-      ]);
+      ]) as { error: any };
 
     setLoading(false);
     if (error) {
@@ -92,13 +87,16 @@ const Notes: React.FC = () => {
 
       // Refetch game scores after adding a new one
       const { data: allScores } = await supabase
-        .from("game_scores" as any)
+        .from("game_scores")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false }) as {
+          data: Tables<"game_scores">[] | null;
+          error: any;
+        };
 
       if (allScores) {
         // Convert game_scores to notes format for display
-        const formattedNotes: Note[] = allScores.map((item: any) => ({
+        const formattedNotes: Note[] = allScores.map((item: Tables<"game_scores">) => ({
           id: item.id,
           title: `Score: ${item.score}`,
           content: `Score recorded for wallet: ${item.wallet_address}`,
