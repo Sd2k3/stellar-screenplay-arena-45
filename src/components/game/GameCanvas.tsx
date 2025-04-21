@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import Ship from "./Ship";
 import Asteroid from "./Asteroid";
@@ -8,12 +7,14 @@ import { cn } from "@/lib/utils";
 interface GameCanvasProps {
   onScoreUpdate: (score: number) => void;
   onGameOver: (finalScore: number) => void;
+  onNameRequired?: (finalScore: number) => void;
   className?: string;
 }
 
 const GameCanvas: React.FC<GameCanvasProps> = ({
   onScoreUpdate,
   onGameOver,
+  onNameRequired,
   className,
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -37,14 +38,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   const [isActive, setIsActive] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   
-  // Game loop using requestAnimationFrame
   const gameLoopRef = useRef<number | null>(null);
   const keysPressed = useRef<Set<string>>(new Set());
   const lastTokenTime = useRef<number>(0);
   const lastAsteroidTime = useRef<number>(0);
   const frameCount = useRef<number>(0);
 
-  // Initialize game
   useEffect(() => {
     if (canvasRef.current) {
       const { width, height } = canvasRef.current.getBoundingClientRect();
@@ -73,7 +72,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     };
   }, [isActive, gameOver]);
 
-  // Reset game state
   const resetGame = () => {
     setShipPosition({ x: canvasSize.width / 2, y: canvasSize.height - 100 });
     setShipRotation(0);
@@ -87,7 +85,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     lastAsteroidTime.current = 0;
   };
 
-  // Main game loop
   useEffect(() => {
     if (!isActive || gameOver) {
       if (gameLoopRef.current) {
@@ -98,7 +95,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     }
 
     const gameLoop = () => {
-      // Update ship position based on key presses
       if (keysPressed.current.has("ArrowLeft")) {
         setShipPosition(prev => ({
           ...prev,
@@ -115,7 +111,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         setShipRotation(0);
       }
 
-      // Add new asteroids periodically
       if (frameCount.current - lastAsteroidTime.current > 60) {
         lastAsteroidTime.current = frameCount.current;
         
@@ -141,7 +136,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         setAsteroids(prev => [...prev, newAsteroid]);
       }
       
-      // Add new tokens periodically
       if (frameCount.current - lastTokenTime.current > 120) {
         lastTokenTime.current = frameCount.current;
         
@@ -157,7 +151,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         setTokens(prev => [...prev, newToken]);
       }
 
-      // Update asteroid positions
       setAsteroids(prev => 
         prev
           .map(asteroid => ({
@@ -171,7 +164,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           .filter(asteroid => asteroid.position.y < canvasSize.height + 50)
       );
 
-      // Update token positions
       setTokens(prev => 
         prev
           .map(token => ({
@@ -184,10 +176,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           .filter(token => token.position.y < canvasSize.height + 30)
       );
 
-      // Check collisions
       const shipRadius = 20;
       
-      // Token collection
       setTokens(prev => 
         prev.map(token => {
           const dx = token.position.x - shipPosition.x;
@@ -202,7 +192,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         })
       );
       
-      // Asteroid collisions
       let collision = false;
       asteroids.forEach(asteroid => {
         const dx = asteroid.position.x - shipPosition.x;
@@ -220,11 +209,9 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         onGameOver(score);
       }
       
-      // Update score
       onScoreUpdate(score);
       frameCount.current++;
       
-      // Continue the game loop
       gameLoopRef.current = requestAnimationFrame(gameLoop);
     };
 
@@ -237,6 +224,17 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     };
   }, [isActive, gameOver, canvasSize, shipPosition, asteroids, tokens, score, onScoreUpdate, onGameOver]);
 
+  useEffect(() => {
+    if (gameOver) {
+      if (onNameRequired) {
+        onNameRequired(score);
+      } else {
+        onGameOver(score);
+      }
+    }
+    // eslint-disable-next-line
+  }, [gameOver]);
+
   return (
     <div 
       ref={canvasRef} 
@@ -246,10 +244,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       )}
       style={{ height: "600px", cursor: "default" }}
     >
-      {/* Ship */}
       <Ship position={shipPosition} rotation={shipRotation} />
       
-      {/* Asteroids */}
       {asteroids.map(asteroid => (
         <Asteroid 
           key={asteroid.id}
@@ -260,7 +256,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         />
       ))}
       
-      {/* Tokens */}
       {tokens.map(token => (
         <Token 
           key={token.id}
@@ -269,7 +264,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         />
       ))}
       
-      {/* Game overlay */}
       {!isActive && !gameOver && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-70 z-50">
           <h2 className="text-white text-3xl mb-4 font-bold">Stellar Arcade</h2>
@@ -280,7 +274,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         </div>
       )}
       
-      {/* Game over overlay */}
       {gameOver && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-70 z-50">
           <h2 className="text-red-500 text-3xl mb-4">Game Over</h2>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,6 +18,7 @@ import {
 import BlockchainSelector from "@/components/blockchain/BlockchainSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import NameDialog from "@/components/game/NameDialog";
 
 const Index = () => {
   const [currentScore, setCurrentScore] = useState(0);
@@ -29,6 +29,9 @@ const Index = () => {
   const [blockchain, setBlockchain] = useState<"ethereum" | "polygon">("ethereum");
   const [leaderboardEntries, setLeaderboardEntries] = useState<any[]>([]);
   const { toast } = useToast();
+  const [playerName, setPlayerName] = useState("");
+  const [shouldShowNameDialog, setShouldShowNameDialog] = useState(false);
+  const [pendingFinalScore, setPendingFinalScore] = useState<number | null>(null);
 
   const { 
     isConnected, 
@@ -59,14 +62,15 @@ const Index = () => {
     fetchLeaderboardData();
   }, []);
 
+  // --- PATCH fetchLeaderboardData to fix Supabase type error ---
   const fetchLeaderboardData = async () => {
     try {
       // Fetch game scores from the database
       const { data: scores, error } = await supabase
-        .from("game_scores")
+        .from("game_scores" as any)
         .select("*")
         .order("score", { ascending: false })
-        .limit(5) as { data: any[] | null, error: any };
+        .limit(5);
 
       if (error) {
         console.error("Error fetching leaderboard:", error);
@@ -94,26 +98,42 @@ const Index = () => {
     }
   };
 
-  const handleGameOver = async (finalScore: number) => {
-    setGamesPlayed(prev => prev + 1);
-    if (finalScore > highScore) {
-      setHighScore(finalScore);
+  // Rework handleGameOver: trigger dialog for name entry if not connected
+  const handleGameCanvasNameRequired = (finalScore: number) => {
+    setPendingFinalScore(finalScore);
+    setShouldShowNameDialog(true);
+  };
+
+  const handleNameDialogSubmit = async (enteredName: string) => {
+    setPlayerName(enteredName);
+    setShouldShowNameDialog(false);
+
+    if (pendingFinalScore !== null) {
+      await saveScore(pendingFinalScore, enteredName);
+      setPendingFinalScore(null);
     }
+  };
+
+  // Save score helper
+  const saveScore = async (finalScore: number, name: string | null) => {
+    setGamesPlayed(prev => prev + 1);
+    if (finalScore > highScore) setHighScore(finalScore);
 
     const newTokens = Math.floor(finalScore / 10);
     setPendingTokens(prev => prev + newTokens);
 
     try {
       // Save score to game_scores table
-      const walletAddr = isConnected && address ? address : "guest-player";
+      const walletAddr = isConnected && address ? address : (name || "guest-player");
+
       const { error } = await supabase
-        .from("game_scores")
+        .from("game_scores" as any)
         .insert([
-          { 
+          {
             wallet_address: walletAddr,
             score: finalScore
           }
-        ]) as { error: any };
+        ]);
 
       if (error) {
         console.error("Error saving game score:", error);
@@ -127,8 +147,6 @@ const Index = () => {
           title: "Score saved",
           description: `Your score of ${finalScore} has been recorded.`,
         });
-        
-        // Refresh leaderboard data
         fetchLeaderboardData();
       }
 
@@ -167,6 +185,17 @@ const Index = () => {
         });
       }
     }, 5000);
+  };
+
+  // Rework handleGameOver to call saveScore or open name dialog appropriately
+  const handleGameOver = (finalScore: number) => {
+    if (!isConnected) {
+      setPendingFinalScore(finalScore);
+      setShouldShowNameDialog(true);
+      return;
+    }
+
+    saveScore(finalScore, null);
   };
 
   const [achievements, setAchievements] = useState<Achievement[]>([
@@ -283,6 +312,7 @@ const Index = () => {
             <GameCanvas 
               onScoreUpdate={setCurrentScore}
               onGameOver={handleGameOver}
+              onNameRequired={handleGameCanvasNameRequired}
               className="h-[600px] mb-4 shadow-xl shadow-space-cosmic-purple/20"
             />
             
@@ -360,6 +390,12 @@ const Index = () => {
             )}
           </div>
         </div>
+
+      {/* Name Entry Dialog */}
+      <NameDialog
+        open={shouldShowNameDialog}
+        onSubmit={handleNameDialogSubmit}
+      />
         
         <footer className="mt-10 text-center text-slate-400 text-sm">
           <p>Achievements tracked on Monad blockchain and verified via Screenpipe.</p>
