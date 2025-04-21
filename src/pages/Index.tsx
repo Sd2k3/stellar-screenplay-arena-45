@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +17,8 @@ import {
   getPlayerTokenBalance 
 } from "@/integrations/supabase/blockchainApi";
 import BlockchainSelector from "@/components/blockchain/BlockchainSelector";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const [currentScore, setCurrentScore] = useState(0);
@@ -24,6 +27,8 @@ const Index = () => {
   const [tokensEarned, setTokensEarned] = useState(0);
   const [pendingTokens, setPendingTokens] = useState(0);
   const [blockchain, setBlockchain] = useState<"ethereum" | "polygon">("ethereum");
+  const [leaderboardEntries, setLeaderboardEntries] = useState<any[]>([]);
+  const { toast } = useToast();
 
   const { 
     isConnected, 
@@ -49,6 +54,46 @@ const Index = () => {
     }
   }, [isConnected, address]);
 
+  // Fetch leaderboard data when component mounts
+  useEffect(() => {
+    fetchLeaderboardData();
+  }, []);
+
+  const fetchLeaderboardData = async () => {
+    try {
+      // Fetch game scores from the database
+      const { data: scores, error } = await supabase
+        .from("game_scores")
+        .select("*")
+        .order("score", { ascending: false })
+        .limit(5) as { data: any[] | null, error: any };
+
+      if (error) {
+        console.error("Error fetching leaderboard:", error);
+        toast({
+          variant: "destructive",
+          title: "Error fetching leaderboard",
+          description: error.message,
+        });
+        return;
+      }
+
+      if (scores && scores.length > 0) {
+        // Format scores for leaderboard display
+        const formattedEntries = scores.map((score, index) => ({
+          id: score.id,
+          rank: index + 1,
+          username: score.wallet_address ? score.wallet_address.slice(0, 6) + "..." : "Player",
+          score: score.score,
+          tokens: Math.floor(score.score / 10),
+        }));
+        setLeaderboardEntries(formattedEntries);
+      }
+    } catch (err) {
+      console.error("Leaderboard fetch error:", err);
+    }
+  };
+
   const handleGameOver = async (finalScore: number) => {
     setGamesPlayed(prev => prev + 1);
     if (finalScore > highScore) {
@@ -58,23 +103,56 @@ const Index = () => {
     const newTokens = Math.floor(finalScore / 10);
     setPendingTokens(prev => prev + newTokens);
 
-    if (isConnected && address && newTokens > 0) {
-      try {
-        const tx = await createBlockchainTransaction({
-          walletAddress: address,
-          type: "earn_token",
-          amount: newTokens,
-        });
+    try {
+      // Save score to game_scores table
+      const walletAddr = isConnected && address ? address : "guest-player";
+      const { error } = await supabase
+        .from("game_scores")
+        .insert([
+          { 
+            wallet_address: walletAddr,
+            score: finalScore
+          }
+        ]) as { error: any };
 
-        await upsertPlayerTokenBalance({
-          walletAddress: address,
-          amount: tokensEarned,
-          pendingAmount: pendingTokens + newTokens
+      if (error) {
+        console.error("Error saving game score:", error);
+        toast({
+          variant: "destructive",
+          title: "Error saving score",
+          description: error.message,
         });
-
-      } catch (err) {
-        console.error("Blockchain tx error", err);
+      } else {
+        toast({
+          title: "Score saved",
+          description: `Your score of ${finalScore} has been recorded.`,
+        });
+        
+        // Refresh leaderboard data
+        fetchLeaderboardData();
       }
+
+      // Handle blockchain transactions if connected
+      if (isConnected && address && newTokens > 0) {
+        try {
+          const tx = await createBlockchainTransaction({
+            walletAddress: address,
+            type: "earn_token",
+            amount: newTokens,
+          });
+
+          await upsertPlayerTokenBalance({
+            walletAddress: address,
+            amount: tokensEarned,
+            pendingAmount: pendingTokens + newTokens
+          });
+
+        } catch (err) {
+          console.error("Blockchain tx error", err);
+        }
+      }
+    } catch (err) {
+      console.error("Error in handleGameOver:", err);
     }
 
     setTimeout(async () => {
@@ -182,58 +260,12 @@ const Index = () => {
     }
   }, [achievements, isConnected, address]);
 
-  const leaderboardEntries = [
-    { 
-      id: "1", 
-      rank: 1, 
-      username: "CosmicWarrior", 
-      score: 450, 
-      tokens: 48 
-    },
-    { 
-      id: "2", 
-      rank: 2, 
-      username: "StarDrifter", 
-      score: 380, 
-      tokens: 42 
-    },
-    { 
-      id: "3", 
-      rank: 3, 
-      username: "NebulaHunter", 
-      score: 320, 
-      tokens: 35 
-    },
-    { 
-      id: "4", 
-      rank: 4, 
-      username: "AstroRacer", 
-      score: 290, 
-      tokens: 31 
-    },
-    { 
-      id: "5", 
-      rank: 5, 
-      username: "Player", 
-      score: Math.max(highScore, currentScore), 
-      tokens: tokensEarned 
-    }
-  ];
-
   return (
     <div className="min-h-screen space-gradient">
       <div className="container mx-auto py-8">
         <header className="mb-8 text-center">
           <h1 className="text-4xl font-bold mb-2 text-white tracking-tight">Stellar Screenplay Arena</h1>
           <p className="text-lg text-slate-300">Play, earn Stellar tokens, and climb the leaderboard!</p>
-          <div className="mt-3">
-            <a
-              href="/notes"
-              className="inline-block px-4 py-2 rounded bg-space-nova-yellow text-black font-medium hover:bg-yellow-400 transition"
-            >
-              Go to Notes
-            </a>
-          </div>
         </header>
         
         <div className="mb-4 flex items-center justify-end gap-3">
