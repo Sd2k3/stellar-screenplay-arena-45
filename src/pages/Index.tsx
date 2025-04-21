@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,6 +9,12 @@ import AchievementCard, { Achievement } from "@/components/blockchain/Achievemen
 import Leaderboard from "@/components/blockchain/Leaderboard";
 import GameStats from "@/components/game/GameStats";
 import { useWalletConnection } from "@/hooks/useWalletConnection";
+import { 
+  createBlockchainTransaction, 
+  recordAchievementOnChain, 
+  upsertPlayerTokenBalance, 
+  getPlayerTokenBalance 
+} from "@/integrations/supabase/blockchainApi";
 
 const Index = () => {
   const [currentScore, setCurrentScore] = useState(0);
@@ -25,22 +30,62 @@ const Index = () => {
     connectWallet, 
     disconnectWallet 
   } = useWalletConnection();
-  
+
+  // Sync player's token balance from Supabase when connected
+  useEffect(() => {
+    if (isConnected && address) {
+      getPlayerTokenBalance(address).then(balanceRow => {
+        if (balanceRow) {
+          setTokensEarned(balanceRow.balance);
+          setPendingTokens(balanceRow.pending_balance);
+        }
+      }).catch(console.error);
+    }
+  }, [isConnected, address]);
+
   // Handle game over
-  const handleGameOver = (finalScore: number) => {
+  const handleGameOver = async (finalScore: number) => {
     setGamesPlayed(prev => prev + 1);
     if (finalScore > highScore) {
       setHighScore(finalScore);
     }
-    
-    // Calculate tokens earned (simplified for demo)
+
     const newTokens = Math.floor(finalScore / 10);
     setPendingTokens(prev => prev + newTokens);
-    
-    // Simulate verification after delay
-    setTimeout(() => {
+
+    if (isConnected && address && newTokens > 0) {
+      // Write blockchain transaction, update balance as pending
+      try {
+        const tx = await createBlockchainTransaction({
+          walletAddress: address,
+          type: "earn_token",
+          amount: newTokens,
+        });
+
+        await upsertPlayerTokenBalance({
+          walletAddress: address,
+          amount: tokensEarned,
+          pendingAmount: pendingTokens + newTokens
+        });
+
+        // (Optional) Could also record on-chain achievement here if milestones met
+      } catch (err) {
+        console.error("Blockchain tx error", err);
+      }
+    }
+
+    // Simulate verification after delay & update in Supabase
+    setTimeout(async () => {
       setTokensEarned(prev => prev + newTokens);
       setPendingTokens(prev => prev - newTokens);
+
+      if (isConnected && address && newTokens > 0) {
+        await upsertPlayerTokenBalance({
+          walletAddress: address,
+          amount: tokensEarned + newTokens,
+          pendingAmount: pendingTokens - newTokens
+        });
+      }
     }, 5000);
   };
 
@@ -114,6 +159,37 @@ const Index = () => {
       setAchievements(updatedAchievements);
     }
   }, [currentScore, tokensEarned, achievements]);
+
+  // When an achievement is completed, record it on chain in Supabase
+  useEffect(() => {
+    if (isConnected && address) {
+      achievements.forEach(async (a) => {
+        if (a.completed && a.verificationStatus === "verified") {
+          // Check if already stored (skip if so)
+          // A real implementation may call Supabase for existence
+          try {
+            // Record as an "on chain" achievement, link to last tx if available
+            const lastTx = await createBlockchainTransaction({
+              walletAddress: address,
+              type: "achievement",
+              amount: a.rewardAmount
+            });
+
+            await recordAchievementOnChain({
+              walletAddress: address,
+              achievementId: a.id,
+              achievementTitle: a.title,
+              transactionId: lastTx?.id,
+            });
+          } catch (err) {
+            // Already exists, ignore for now
+          }
+        }
+      });
+    }
+    // Only run if address or achievements change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [achievements, isConnected, address]);
   
   // Mock leaderboard data
   const leaderboardEntries = [

@@ -9,7 +9,104 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      blockchain_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          status: string
+          transaction_hash: string | null
+          transaction_type: string
+          updated_at: string
+          wallet_address: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          status?: string
+          transaction_hash?: string | null
+          transaction_type: string
+          updated_at?: string
+          wallet_address: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          status?: string
+          transaction_hash?: string | null
+          transaction_type?: string
+          updated_at?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
+      player_achievements: {
+        Row: {
+          achievement_id: string
+          achievement_title: string
+          created_at: string
+          id: string
+          transaction_id: string | null
+          updated_at: string
+          verified_on_chain: boolean | null
+          wallet_address: string
+        }
+        Insert: {
+          achievement_id: string
+          achievement_title: string
+          created_at?: string
+          id?: string
+          transaction_id?: string | null
+          updated_at?: string
+          verified_on_chain?: boolean | null
+          wallet_address: string
+        }
+        Update: {
+          achievement_id?: string
+          achievement_title?: string
+          created_at?: string
+          id?: string
+          transaction_id?: string | null
+          updated_at?: string
+          verified_on_chain?: boolean | null
+          wallet_address?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_achievements_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "blockchain_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_tokens: {
+        Row: {
+          balance: number
+          id: string
+          last_updated: string
+          pending_balance: number
+          wallet_address: string
+        }
+        Insert: {
+          balance?: number
+          id?: string
+          last_updated?: string
+          pending_balance?: number
+          wallet_address: string
+        }
+        Update: {
+          balance?: number
+          id?: string
+          last_updated?: string
+          pending_balance?: number
+          wallet_address?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
