@@ -1,48 +1,34 @@
 
 import React from "react";
-import { cn } from "@/lib/utils";
 
 interface TokenProps {
   position: { x: number; y: number };
-  collected?: boolean;
-  className?: string;
-  size?: number;
+  collected: boolean;
+  special?: boolean;
 }
 
-const Token: React.FC<TokenProps> = ({
-  position,
-  collected = false,
-  className,
-  size = 30,
-}) => {
+const Token: React.FC<TokenProps> = ({ position, collected, special = false }) => {
+  if (collected) return null;
+
   return (
     <div
-      className={cn(
-        "absolute transition-all duration-300",
-        collected ? "scale-150 opacity-0" : "scale-100 opacity-100",
-        "animate-[pulse_2s_ease-in-out_infinite]",
-        "glow-yellow",
-        className
-      )}
+      className={`absolute transition-transform ${special ? "animate-pulse" : ""}`}
       style={{
         transform: `translate(${position.x}px, ${position.y}px)`,
-        width: size,
-        height: size,
+        width: 30,
+        height: 30,
       }}
     >
-      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <circle
-          cx="50"
-          cy="50"
-          r="40"
-          className="fill-space-nova-yellow"
-          opacity="0.8"
-        />
+      <svg
+        className={`w-full h-full ${special ? "text-amber-400 filter drop-shadow-[0_0_3px_#FFC107]" : "text-space-nova-yellow"}`}
+        viewBox="0 0 24 24"
+        fill="currentColor"
+      >
+        <circle cx="12" cy="12" r="10" />
         <path
-          d="M50 20 L60 40 L80 45 L65 60 L70 80 L50 70 L30 80 L35 60 L20 45 L40 40 Z"
-          className="fill-yellow-400"
+          fill="white"
+          d="M12 6l1.5 4.5h4.5l-3.6 2.7 1.4 4.3-3.8-2.8-3.8 2.8 1.4-4.3-3.6-2.7h4.5z"
         />
-        <circle cx="50" cy="50" r="15" className="fill-white" opacity="0.6" />
       </svg>
     </div>
   );
