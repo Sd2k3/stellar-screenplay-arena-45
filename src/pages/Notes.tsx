@@ -8,13 +8,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
-// Define a type for notes since it's not in the Supabase types
+// Define a type for our game scores since it's not automatically in the Supabase types
+interface GameScore {
+  id: string;
+  wallet_address: string;
+  score: number;
+  created_at: string;
+}
+
+// Define a Note format to display the scores in a notes-like format
 interface Note {
   id: string;
   title: string;
   content: string;
   created_at: string;
-  updated_at?: string;
 }
 
 const Notes: React.FC = () => {
@@ -25,23 +32,23 @@ const Notes: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Fetch notes 
+  // Fetch game scores 
   useEffect(() => {
-    const fetchNotes = async () => {
-      // Using any type here since the game_scores table isn't in the TypeScript definitions
+    const fetchGameScores = async () => {
+      // We need to use any type because game_scores isn't in the TypeScript definitions
       const { data, error } = await supabase
         .from("game_scores")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false }) as { data: GameScore[] | null, error: any };
         
       if (error) {
         toast({
           variant: "destructive",
-          title: "Error fetching notes",
+          title: "Error fetching scores",
           description: error.message,
         });
       } else if (data) {
-        // Convert game_scores to notes format
+        // Convert game_scores to notes format for display
         const formattedNotes: Note[] = data.map(item => ({
           id: item.id,
           title: `Score: ${item.score}`,
@@ -51,14 +58,14 @@ const Notes: React.FC = () => {
         setNotes(formattedNotes);
       }
     };
-    fetchNotes();
+    fetchGameScores();
   }, [toast]);
 
   const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
-    // Insert into game_scores table instead
+    // Insert into game_scores table
     const { error } = await supabase
       .from("game_scores")
       .insert([
@@ -66,13 +73,13 @@ const Notes: React.FC = () => {
           wallet_address: "demo-wallet-address", // Replace with actual wallet address if available
           score: parseInt(title) || 0 // Convert title to score number
         }
-      ]);
+      ]) as { error: any };
       
     setLoading(false);
     if (error) {
       toast({
         variant: "destructive",
-        title: "Failed to add note",
+        title: "Failed to add score",
         description: error.message,
       });
     } else {
@@ -83,14 +90,14 @@ const Notes: React.FC = () => {
         description: "Your score has been recorded.",
       });
       
-      // Refetch notes
+      // Refetch game scores after adding a new one
       const { data: allScores } = await supabase
         .from("game_scores")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false }) as { data: GameScore[] | null, error: any };
         
       if (allScores) {
-        // Convert game_scores to notes format
+        // Convert game_scores to notes format for display
         const formattedNotes: Note[] = allScores.map(item => ({
           id: item.id,
           title: `Score: ${item.score}`,
