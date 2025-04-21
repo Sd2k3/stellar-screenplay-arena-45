@@ -3,12 +3,13 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon, RocketIcon, TrophyIcon, BarChart3Icon } from "lucide-react";
+import { InfoIcon, RocketIcon, TrophyIcon, BarChart3Icon, WalletIcon } from "lucide-react";
 import GameCanvas from "@/components/game/GameCanvas";
 import TokenBalance from "@/components/blockchain/TokenBalance";
 import AchievementCard, { Achievement } from "@/components/blockchain/AchievementCard";
 import Leaderboard from "@/components/blockchain/Leaderboard";
 import GameStats from "@/components/game/GameStats";
+import { useWalletConnection } from "@/hooks/useWalletConnection";
 
 const Index = () => {
   const [currentScore, setCurrentScore] = useState(0);
@@ -16,6 +17,14 @@ const Index = () => {
   const [gamesPlayed, setGamesPlayed] = useState(0);
   const [tokensEarned, setTokensEarned] = useState(0);
   const [pendingTokens, setPendingTokens] = useState(0);
+  
+  const { 
+    isConnected, 
+    isConnecting, 
+    address, 
+    connectWallet, 
+    disconnectWallet 
+  } = useWalletConnection();
   
   // Handle game over
   const handleGameOver = (finalScore: number) => {
@@ -218,9 +227,16 @@ const Index = () => {
               </TabsContent>
             </Tabs>
             
-            <Button className="mt-2" variant="default">
-              <RocketIcon className="h-4 w-4 mr-2" />
-              Connect Blockchain Wallet
+            <Button 
+              className="mt-2" 
+              variant={isConnected ? "outline" : "default"} 
+              onClick={isConnected ? disconnectWallet : connectWallet}
+              disabled={isConnecting}
+            >
+              <WalletIcon className="h-4 w-4 mr-2" />
+              {isConnecting ? "Connecting..." : 
+               isConnected ? `Connected: ${address}` : 
+               "Connect Blockchain Wallet"}
             </Button>
           </div>
         </div>
