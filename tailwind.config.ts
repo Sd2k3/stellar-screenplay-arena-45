@@ -32,6 +32,14 @@ export default {
 					DEFAULT: 'hsl(var(--secondary))',
 					foreground: 'hsl(var(--secondary-foreground))'
 				},
+				space: {
+					'deep-blue': '#0B0B3B',
+					'cosmic-purple': '#3B0B6D',
+					'stellar-blue': '#0EA5E9',
+					'nebula-pink': '#D946EF',
+					'nova-yellow': '#FBBF24',
+					'asteroid-gray': '#64748B',
+				},
 				destructive: {
 					DEFAULT: 'hsl(var(--destructive))',
 					foreground: 'hsl(var(--destructive-foreground))'
