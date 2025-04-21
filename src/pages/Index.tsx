@@ -87,7 +87,9 @@ const Index = () => {
         const formattedEntries = scores.map((score: Tables<"game_scores">, index: number) => ({
           id: score.id,
           rank: index + 1,
-          username: score.wallet_address ? score.wallet_address.slice(0, 6) + "..." : "Player",
+          username: score.player_name?.trim() !== '' 
+                    ? score.player_name 
+                    : (score.wallet_address ? score.wallet_address.slice(0, 6) + "..." : "Player"),
           score: score.score,
           tokens: Math.floor(score.score / 10),
         }));
@@ -128,7 +130,8 @@ const Index = () => {
         .insert([
           {
             wallet_address: walletAddr,
-            score: finalScore
+            score: finalScore,
+            player_name: name || null,
           }
         ]);
 
