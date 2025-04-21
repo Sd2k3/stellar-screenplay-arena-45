@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 interface LeaderboardEntry {
   id: string;
   rank: number;
-  username: string;
+  username: string | null;
   score: number;
   tokens: number;
   avatarUrl?: string;
@@ -40,9 +40,11 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ entries, className }) => {
                 </div>
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={entry.avatarUrl} />
-                  <AvatarFallback>{entry.username.substring(0, 2).toUpperCase()}</AvatarFallback>
+                  <AvatarFallback>
+                    {entry.username ? entry.username.substring(0, 2).toUpperCase() : "??"}
+                  </AvatarFallback>
                 </Avatar>
-                <div className="font-medium">{entry.username}</div>
+                <div className="font-medium">{entry.username || "Anonymous Player"}</div>
               </div>
               <div className="flex items-center gap-4">
                 <div className="text-right">
