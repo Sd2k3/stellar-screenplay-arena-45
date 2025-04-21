@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -82,9 +83,9 @@ const Index = () => {
         return;
       }
 
-      if (scores && scores.length > 0) {
+      if (scores && Array.isArray(scores) && scores.length > 0) {
         // Format scores for leaderboard display
-        const formattedEntries = scores.map((score, index) => ({
+        const formattedEntries = scores.map((score: any, index: number) => ({
           id: score.id,
           rank: index + 1,
           username: score.wallet_address ? score.wallet_address.slice(0, 6) + "..." : "Player",

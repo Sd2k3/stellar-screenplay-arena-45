@@ -42,6 +42,27 @@ export type Database = {
         }
         Relationships: []
       }
+      game_scores: {
+        Row: {
+          created_at: string
+          id: string
+          score: number
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          score: number
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          score?: number
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       player_achievements: {
         Row: {
           achievement_id: string

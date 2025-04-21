@@ -35,12 +35,12 @@ const Notes: React.FC = () => {
   // Fetch game scores 
   useEffect(() => {
     const fetchGameScores = async () => {
-      // We need to use any type because game_scores isn't in the TypeScript definitions
+      // We need to use 'as any' because game_scores isn't in the TS defs
       const { data, error } = await supabase
-        .from("game_scores")
+        .from("game_scores" as any)
         .select("*")
-        .order("created_at", { ascending: false }) as { data: GameScore[] | null, error: any };
-        
+        .order("created_at", { ascending: false });
+
       if (error) {
         toast({
           variant: "destructive",
@@ -49,7 +49,7 @@ const Notes: React.FC = () => {
         });
       } else if (data) {
         // Convert game_scores to notes format for display
-        const formattedNotes: Note[] = data.map(item => ({
+        const formattedNotes: Note[] = data.map((item: any) => ({
           id: item.id,
           title: `Score: ${item.score}`,
           content: `Score recorded for wallet: ${item.wallet_address}`,
@@ -64,17 +64,17 @@ const Notes: React.FC = () => {
   const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     // Insert into game_scores table
     const { error } = await supabase
-      .from("game_scores")
+      .from("game_scores" as any)
       .insert([
         { 
           wallet_address: "demo-wallet-address", // Replace with actual wallet address if available
           score: parseInt(title) || 0 // Convert title to score number
         }
-      ]) as { error: any };
-      
+      ]);
+
     setLoading(false);
     if (error) {
       toast({
@@ -89,16 +89,16 @@ const Notes: React.FC = () => {
         title: "Score saved",
         description: "Your score has been recorded.",
       });
-      
+
       // Refetch game scores after adding a new one
       const { data: allScores } = await supabase
-        .from("game_scores")
+        .from("game_scores" as any)
         .select("*")
-        .order("created_at", { ascending: false }) as { data: GameScore[] | null, error: any };
-        
+        .order("created_at", { ascending: false });
+
       if (allScores) {
         // Convert game_scores to notes format for display
-        const formattedNotes: Note[] = allScores.map(item => ({
+        const formattedNotes: Note[] = allScores.map((item: any) => ({
           id: item.id,
           title: `Score: ${item.score}`,
           content: `Score recorded for wallet: ${item.wallet_address}`,
