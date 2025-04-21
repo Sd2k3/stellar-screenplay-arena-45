@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,6 +21,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import NameDialog from "@/components/game/NameDialog";
 import type { Tables } from "@/integrations/supabase/types";
+
+// Local storage keys
+const STORAGE_KEYS = {
+  HIGH_SCORE: 'stellar_high_score',
+  GAMES_PLAYED: 'stellar_games_played',
+  TOKENS_EARNED: 'stellar_tokens_earned',
+  PENDING_TOKENS: 'stellar_pending_tokens',
+  ACHIEVEMENTS: 'stellar_achievements',
+  PLAYER_NAME: 'stellar_player_name'
+};
 
 const Index = () => {
   const [currentScore, setCurrentScore] = useState(0);
@@ -47,12 +58,45 @@ const Index = () => {
       ? "Ethereum (Goerli Testnet)"
       : "Polygon (Mumbai Testnet)";
 
+  // Load saved data from localStorage when component mounts
+  useEffect(() => {
+    const savedHighScore = localStorage.getItem(STORAGE_KEYS.HIGH_SCORE);
+    const savedGamesPlayed = localStorage.getItem(STORAGE_KEYS.GAMES_PLAYED);
+    const savedTokensEarned = localStorage.getItem(STORAGE_KEYS.TOKENS_EARNED);
+    const savedPendingTokens = localStorage.getItem(STORAGE_KEYS.PENDING_TOKENS);
+    const savedAchievements = localStorage.getItem(STORAGE_KEYS.ACHIEVEMENTS);
+    const savedPlayerName = localStorage.getItem(STORAGE_KEYS.PLAYER_NAME);
+
+    if (savedHighScore) setHighScore(parseInt(savedHighScore));
+    if (savedGamesPlayed) setGamesPlayed(parseInt(savedGamesPlayed));
+    if (savedTokensEarned) setTokensEarned(parseInt(savedTokensEarned));
+    if (savedPendingTokens) setPendingTokens(parseInt(savedPendingTokens));
+    if (savedPlayerName) setPlayerName(savedPlayerName);
+    
+    if (savedAchievements) {
+      try {
+        const parsedAchievements = JSON.parse(savedAchievements);
+        setAchievements(parsedAchievements);
+      } catch (e) {
+        console.error("Error parsing saved achievements:", e);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (isConnected && address) {
       getPlayerTokenBalance(address).then(balanceRow => {
         if (balanceRow) {
-          setTokensEarned(balanceRow.balance);
-          setPendingTokens(balanceRow.pending_balance);
+          setTokensEarned(prev => {
+            const newValue = balanceRow.balance;
+            localStorage.setItem(STORAGE_KEYS.TOKENS_EARNED, newValue.toString());
+            return newValue;
+          });
+          setPendingTokens(prev => {
+            const newValue = balanceRow.pending_balance;
+            localStorage.setItem(STORAGE_KEYS.PENDING_TOKENS, newValue.toString());
+            return newValue;
+          });
         }
       }).catch(console.error);
     }
@@ -106,7 +150,11 @@ const Index = () => {
   };
 
   const handleNameDialogSubmit = async (enteredName: string) => {
-    setPlayerName(enteredName);
+    setPlayerName(prev => {
+      const newName = enteredName;
+      localStorage.setItem(STORAGE_KEYS.PLAYER_NAME, newName);
+      return newName;
+    });
     setShouldShowNameDialog(false);
 
     if (pendingFinalScore !== null) {
@@ -116,11 +164,26 @@ const Index = () => {
   };
 
   const saveScore = async (finalScore: number, name: string | null) => {
-    setGamesPlayed(prev => prev + 1);
-    if (finalScore > highScore) setHighScore(finalScore);
+    setGamesPlayed(prev => {
+      const newValue = prev + 1;
+      localStorage.setItem(STORAGE_KEYS.GAMES_PLAYED, newValue.toString());
+      return newValue;
+    });
+    
+    if (finalScore > highScore) {
+      setHighScore(prev => {
+        const newValue = finalScore;
+        localStorage.setItem(STORAGE_KEYS.HIGH_SCORE, newValue.toString());
+        return newValue;
+      });
+    }
 
     const newTokens = Math.floor(finalScore / 10);
-    setPendingTokens(prev => prev + newTokens);
+    setPendingTokens(prev => {
+      const newValue = prev + newTokens;
+      localStorage.setItem(STORAGE_KEYS.PENDING_TOKENS, newValue.toString());
+      return newValue;
+    });
 
     try {
       const walletAddr = isConnected && address ? address : (name || "guest-player");
@@ -173,8 +236,17 @@ const Index = () => {
     }
 
     setTimeout(async () => {
-      setTokensEarned(prev => prev + newTokens);
-      setPendingTokens(prev => prev - newTokens);
+      setTokensEarned(prev => {
+        const newValue = prev + newTokens;
+        localStorage.setItem(STORAGE_KEYS.TOKENS_EARNED, newValue.toString());
+        return newValue;
+      });
+      
+      setPendingTokens(prev => {
+        const newValue = prev - newTokens;
+        localStorage.setItem(STORAGE_KEYS.PENDING_TOKENS, newValue.toString());
+        return newValue;
+      });
 
       if (isConnected && address && newTokens > 0) {
         await upsertPlayerTokenBalance({
@@ -258,7 +330,10 @@ const Index = () => {
     }
     
     if (changed) {
-      setAchievements(updatedAchievements);
+      setAchievements(prev => {
+        localStorage.setItem(STORAGE_KEYS.ACHIEVEMENTS, JSON.stringify(updatedAchievements));
+        return updatedAchievements;
+      });
     }
   }, [currentScore, tokensEarned, achievements]);
 
