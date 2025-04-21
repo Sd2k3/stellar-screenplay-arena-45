@@ -73,7 +73,7 @@ export async function upsertPlayerTokenBalance({
         pending_balance: pendingAmount ?? 0,
         last_updated: new Date().toISOString(),
       },
-      { onConflict: ["wallet_address"] }
+      { onConflict: "wallet_address" }
     )
     .select()
     .maybeSingle();
