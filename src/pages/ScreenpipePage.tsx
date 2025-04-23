@@ -1,5 +1,8 @@
 
 import ScreenpipePanel from "@/components/screenpipe/ScreenpipePanel";
+import ScreenpipeLivePanel from "@/components/screenpipe/ScreenpipeLivePanel";
+import ScreenpipeSearchPanel from "@/components/screenpipe/ScreenpipeSearchPanel";
+import ScreenpipeMeetingSummarizer from "@/components/screenpipe/ScreenpipeMeetingSummarizer";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
@@ -14,13 +17,24 @@ export default function ScreenpipePage() {
           Your data stays private – everything is processed locally in your browser.
         </p>
         <Tabs defaultValue="latest" className="w-full mb-4">
-          <TabsList className="w-full bg-black/50 border border-space-stellar-blue flex">
+          <TabsList className="w-full bg-black/50 border border-space-stellar-blue flex flex-wrap">
             <TabsTrigger value="latest" className="flex-1">Latest Activity</TabsTrigger>
-            {/* More tabs such as 'Meetings', 'Search', or 'Realtime' could be added here */}
+            <TabsTrigger value="live" className="flex-1">Live Monitor</TabsTrigger>
+            <TabsTrigger value="search" className="flex-1">Search</TabsTrigger>
+            <TabsTrigger value="meeting" className="flex-1">Meeting Summarizer</TabsTrigger>
           </TabsList>
 
           <TabsContent value="latest">
             <ScreenpipePanel />
+          </TabsContent>
+          <TabsContent value="live">
+            <ScreenpipeLivePanel />
+          </TabsContent>
+          <TabsContent value="search">
+            <ScreenpipeSearchPanel />
+          </TabsContent>
+          <TabsContent value="meeting">
+            <ScreenpipeMeetingSummarizer />
           </TabsContent>
         </Tabs>
         <Alert className="bg-black/30 border border-space-stellar-blue text-white mt-6">
