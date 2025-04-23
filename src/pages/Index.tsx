@@ -336,92 +336,61 @@ const Index = () => {
   useEffect(() => {
     let updatedAchievements = [...achievements];
     let changed = false;
+    let achievementToRecord = null;
 
-    if (currentScore >= 100 && !achievements[0].completed) {
-      updatedAchievements[0] = {
-        ...updatedAchievements[0],
-        completed: true,
-        timestamp: new Date().toISOString(),
-        verificationStatus: "verified"
-      };
-      changed = true;
-    }
-    if (currentScore >= 200 && !achievements[1].completed) {
-      updatedAchievements[1] = {
-        ...updatedAchievements[1],
-        completed: true,
-        timestamp: new Date().toISOString(),
-        verificationStatus: "verified"
-      };
-      changed = true;
-    }
-    if (currentScore >= 300 && !achievements[2].completed) {
-      updatedAchievements[2] = {
-        ...updatedAchievements[2],
-        completed: true,
-        timestamp: new Date().toISOString(),
-        verificationStatus: "verified"
-      };
-      changed = true;
-    }
-    if (currentScore >= 500 && !achievements[3].completed) {
-      updatedAchievements[3] = {
-        ...updatedAchievements[3],
-        completed: true,
-        timestamp: new Date().toISOString(),
-        verificationStatus: "verified"
-      };
-      changed = true;
-    }
-
-    if (tokensEarned >= 50 && !achievements[4].completed) {
-      updatedAchievements[4] = {
-        ...updatedAchievements[4],
-        completed: true,
-        timestamp: new Date().toISOString(),
-        verificationStatus: "verified"
-      };
-      changed = true;
-    }
-    if (tokensEarned >= 100 && !achievements[5].completed) {
-      updatedAchievements[5] = {
-        ...updatedAchievements[5],
-        completed: true,
-        timestamp: new Date().toISOString(),
-        verificationStatus: "verified"
-      };
-      changed = true;
-    }
-    if (gamesPlayed >= 10 && !achievements[6].completed) {
-      updatedAchievements[6] = {
-        ...updatedAchievements[6],
-        completed: true,
-        timestamp: new Date().toISOString(),
-        verificationStatus: "verified"
-      };
-      changed = true;
-    }
-
-    if (currentScore > 0 && !achievements[7].completed) {
-      const sessionTokensCollected = Math.floor(currentScore / 10);
-      if (sessionTokensCollected >= 20) {
-        updatedAchievements[7] = {
-          ...updatedAchievements[7],
-          completed: true,
-          timestamp: new Date().toISOString(),
-          verificationStatus: "verified"
-        };
+    const checkAndUpdateAchievement = async (achievement: Achievement, condition: boolean) => {
+      if (condition && !achievement.completed) {
+        achievement.completed = true;
+        achievement.timestamp = new Date().toISOString();
+        achievement.verificationStatus = "pending";
         changed = true;
+        achievementToRecord = achievement;
       }
-    }
+    };
+
+    checkAndUpdateAchievement(updatedAchievements[0], currentScore >= 100);
+    checkAndUpdateAchievement(updatedAchievements[1], currentScore >= 200);
+    checkAndUpdateAchievement(updatedAchievements[2], currentScore >= 300);
+    checkAndUpdateAchievement(updatedAchievements[3], currentScore >= 500);
+    checkAndUpdateAchievement(updatedAchievements[4], tokensEarned >= 50);
+    checkAndUpdateAchievement(updatedAchievements[5], tokensEarned >= 100);
+    checkAndUpdateAchievement(updatedAchievements[6], gamesPlayed >= 10);
+
+    const sessionTokensCollected = Math.floor(currentScore / 10);
+    checkAndUpdateAchievement(updatedAchievements[7], sessionTokensCollected >= 20);
 
     if (changed) {
       setAchievements(prev => {
         localStorage.setItem(STORAGE_KEYS.ACHIEVEMENTS, JSON.stringify(updatedAchievements));
         return updatedAchievements;
       });
+
+      if (isConnected && address && achievementToRecord) {
+        recordAchievementOnChain({
+          walletAddress: address,
+          achievementId: achievementToRecord.id,
+          achievementTitle: achievementToRecord.title,
+          contractAddress: blockchain === "ethereum" 
+            ? "0x123..." // Replace with actual contract address
+            : "0x456..."  // Replace with actual contract address
+        }).then(result => {
+          if (result.success) {
+            toast({
+              title: "Achievement Recorded",
+              description: `${achievementToRecord.title} has been recorded on the blockchain!`,
+            });
+          }
+        }).catch(error => {
+          console.error("Error recording achievement:", error);
+          toast({
+            variant: "destructive",
+            title: "Recording Failed",
+            description: "Could not record achievement on the blockchain.",
+          });
+        });
+      }
     }
-  }, [currentScore, tokensEarned, gamesPlayed, achievements]);
+  }, [currentScore, tokensEarned, gamesPlayed, achievements, isConnected, address, blockchain, toast]);
 
   return (
     <div className="min-h-screen space-gradient">

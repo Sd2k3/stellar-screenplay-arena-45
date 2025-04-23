@@ -3,6 +3,8 @@ import React from "react";
 import { useScreenpipeActivity } from "@/hooks/useScreenpipeActivity";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
+import { verifyAchievementWithContract } from "@/integrations/supabase/blockchainApi";
 
 export interface ScreenpipePanelProps {
   minutes?: number;
@@ -10,19 +12,35 @@ export interface ScreenpipePanelProps {
   contentType?: "ocr" | "audio" | "ui" | "all";
 }
 
-const typePretty = {
-  OCR: "Screen Text",
-  Audio: "Audio Transcript",
-  UI: "UI Element",
-  all: "All",
-};
-
 const ScreenpipePanel: React.FC<ScreenpipePanelProps> = ({
   minutes = 5,
   limit = 15,
   contentType = "all",
 }) => {
   const { data, loading, error } = useScreenpipeActivity({ minutes, limit, contentType });
+  const { toast } = useToast();
+
+  // Process Screenpipe data for achievement verification
+  const processScreenpipeData = (item: any) => {
+    // Check for achievement-related content
+    if (item.type === "OCR" && item.content?.text) {
+      const text = item.content.text.toLowerCase();
+      
+      // Example verification logic - adjust based on your game's specific needs
+      if (text.includes("achievement") || text.includes("complete") || text.includes("stellar")) {
+        toast({
+          title: "Achievement Verification",
+          description: "Screenpipe detected achievement-related activity",
+        });
+      }
+    }
+  };
+
+  React.useEffect(() => {
+    if (data && data.length > 0) {
+      data.forEach(processScreenpipeData);
+    }
+  }, [data]);
 
   return (
     <Card className="w-full border border-space-stellar-blue bg-black/30">

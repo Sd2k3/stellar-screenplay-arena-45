@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -20,29 +19,24 @@ export function useWalletConnection() {
   });
   const { toast } = useToast();
 
-  // Check if wallet is already connected on mount
   useEffect(() => {
     const checkConnection = async () => {
       if (typeof window !== "undefined" && window.ethereum) {
         try {
-          // Check if already connected
           const accounts = await window.ethereum.request({ 
             method: 'eth_accounts' 
           });
           
           if (accounts.length > 0) {
-            // Get chain ID
             const chainId = await window.ethereum.request({ 
               method: 'eth_chainId' 
             });
             
-            // Get ETH balance
             const balance = await window.ethereum.request({ 
               method: 'eth_getBalance',
               params: [accounts[0], 'latest']
             });
             
-            // Convert balance from wei to ETH
             const ethBalance = parseInt(balance) / 1e18;
             
             setWalletState({
@@ -62,12 +56,10 @@ export function useWalletConnection() {
     checkConnection();
   }, []);
   
-  // Listen for account changes
   useEffect(() => {
     if (typeof window !== "undefined" && window.ethereum) {
       const handleAccountsChanged = async (accounts: string[]) => {
         if (accounts.length === 0) {
-          // User disconnected their wallet
           setWalletState({
             isConnected: false,
             isConnecting: false,
@@ -80,20 +72,16 @@ export function useWalletConnection() {
             description: "Your wallet has been disconnected"
           });
         } else if (accounts[0] !== walletState.address) {
-          // Account changed
           try {
-            // Get chain ID
             const chainId = await window.ethereum.request({ 
               method: 'eth_chainId' 
             });
             
-            // Get ETH balance
             const balance = await window.ethereum.request({ 
               method: 'eth_getBalance',
               params: [accounts[0], 'latest']
             });
             
-            // Convert balance from wei to ETH
             const ethBalance = parseInt(balance) / 1e18;
             
             setWalletState({
@@ -115,15 +103,12 @@ export function useWalletConnection() {
       };
       
       const handleChainChanged = (chainId: string) => {
-        // Chain changed, reload the page as recommended by MetaMask
         window.location.reload();
       };
       
-      // Subscribe to events
       window.ethereum.on('accountsChanged', handleAccountsChanged);
       window.ethereum.on('chainChanged', handleChainChanged);
       
-      // Cleanup
       return () => {
         if (window.ethereum.removeListener) {
           window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
@@ -134,33 +119,27 @@ export function useWalletConnection() {
   }, [walletState.address, toast]);
 
   const connectWallet = useCallback(async () => {
-    // Don't try to connect if already connecting or connected
     if (walletState.isConnecting || walletState.isConnected) return;
 
     try {
       setWalletState(prev => ({ ...prev, isConnecting: true }));
 
-      // Check if browser has window.ethereum (MetaMask or similar)
       if (typeof window !== "undefined" && window.ethereum) {
         try {
-          // Request wallet connection - this will open the MetaMask popup
           const accounts = await window.ethereum.request({ 
             method: 'eth_requestAccounts' 
           });
           
           if (accounts.length > 0) {
-            // Get chain ID
             const chainId = await window.ethereum.request({ 
               method: 'eth_chainId' 
             });
             
-            // Get ETH balance
             const balance = await window.ethereum.request({ 
               method: 'eth_getBalance',
               params: [accounts[0], 'latest']
             });
             
-            // Convert balance from wei to ETH
             const ethBalance = parseInt(balance) / 1e18;
             
             setWalletState({
@@ -171,31 +150,21 @@ export function useWalletConnection() {
               chainId,
             });
 
+            localStorage.setItem('wallet_address', accounts[0]);
+
             toast({
               title: "Wallet Connected",
-              description: `Connected to address ${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`,
+              description: `Connected to ${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`,
             });
-
-            console.log("Wallet connected:", accounts[0]);
             
+            console.log("Wallet connected:", accounts[0]);
             return true;
-          } else {
-            throw new Error("No accounts found");
           }
         } catch (error: any) {
-          if (error.code === 4001) {
-            // User rejected the connection request
-            toast({
-              variant: "destructive",
-              title: "Connection Rejected",
-              description: "You rejected the connection request"
-            });
-          } else {
-            throw error;
-          }
+          handleWalletError(error);
+          return false;
         }
       } else {
-        // Handle case where no wallet is available
         toast({
           variant: "destructive",
           title: "No Wallet Detected",
@@ -206,17 +175,29 @@ export function useWalletConnection() {
       setWalletState(prev => ({ ...prev, isConnecting: false }));
       return false;
     } catch (error) {
-      console.error("Error connecting wallet:", error);
-      toast({
-        variant: "destructive",
-        title: "Connection Failed",
-        description: error instanceof Error ? error.message : "Could not connect wallet"
-      });
-      
-      setWalletState(prev => ({ ...prev, isConnecting: false }));
+      handleWalletError(error);
       return false;
     }
   }, [walletState.isConnecting, walletState.isConnected, toast]);
+
+  const handleWalletError = (error: any) => {
+    console.error("Wallet error:", error);
+    let description = "Could not connect wallet";
+    
+    if (error.code === 4001) {
+      description = "You rejected the connection request";
+    } else if (error.code === -32002) {
+      description = "Please check your wallet - a connection request is pending";
+    }
+    
+    toast({
+      variant: "destructive",
+      title: "Connection Failed",
+      description
+    });
+    
+    setWalletState(prev => ({ ...prev, isConnecting: false }));
+  };
 
   const disconnectWallet = useCallback(() => {
     setWalletState({
