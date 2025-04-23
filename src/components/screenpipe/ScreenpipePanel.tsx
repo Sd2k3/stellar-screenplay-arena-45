@@ -12,6 +12,13 @@ export interface ScreenpipePanelProps {
   contentType?: "ocr" | "audio" | "ui" | "all";
 }
 
+// Define the typePretty object to display human-readable content types
+const typePretty = {
+  "OCR": "Screen Text",
+  "Audio": "Voice/Audio",
+  "UI": "UI Interaction"
+};
+
 const ScreenpipePanel: React.FC<ScreenpipePanelProps> = ({
   minutes = 5,
   limit = 15,

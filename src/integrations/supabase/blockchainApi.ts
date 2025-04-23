@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ethers } from "ethers";
 
@@ -33,11 +32,13 @@ export async function recordAchievementOnChain({
   achievementId,
   achievementTitle,
   transactionId,
+  contractAddress,
 }: {
   walletAddress: string;
   achievementId: string;
   achievementTitle: string;
-  transactionId: string;
+  transactionId?: string;
+  contractAddress?: string;
 }) {
   const { data, error } = await supabase
     .from("player_achievements")
@@ -52,7 +53,7 @@ export async function recordAchievementOnChain({
     .maybeSingle();
 
   if (error) throw error;
-  return data;
+  return { ...data, success: true };
 }
 
 // Get or create the player's token balance row

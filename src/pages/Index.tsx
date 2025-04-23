@@ -374,7 +374,7 @@ const Index = () => {
             ? "0x123..." // Replace with actual contract address
             : "0x456..."  // Replace with actual contract address
         }).then(result => {
-          if (result.success) {
+          if (result && result.success) {
             toast({
               title: "Achievement Recorded",
               description: `${achievementToRecord.title} has been recorded on the blockchain!`,
