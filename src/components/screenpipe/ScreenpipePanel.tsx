@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { verifyAchievementWithContract } from "@/integrations/supabase/blockchainApi";
+import { AlertCircle } from "lucide-react";
 
 export interface ScreenpipePanelProps {
   minutes?: number;
@@ -52,15 +53,43 @@ const ScreenpipePanel: React.FC<ScreenpipePanelProps> = ({
   return (
     <Card className="w-full border border-space-stellar-blue bg-black/30">
       <CardHeader>
-        <CardTitle>
-          🚀 Recent Screenpipe Activity (last {minutes} min)
+        <CardTitle className="flex items-center justify-between">
+          <span>🚀 Recent Screenpipe Activity (last {minutes} min)</span>
+          {error && (
+            <span className="text-xs text-red-400 flex items-center">
+              <AlertCircle className="h-3 w-3 mr-1" />
+              Fetch Error
+            </span>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-80 pr-2">
           {loading && <div className="text-slate-400">Loading activity…</div>}
-          {error && <div className="text-red-500">{error}</div>}
-          {!loading && data.length === 0 && <div className="text-slate-400">No data found.</div>}
+          
+          {error && (
+            <div className="text-red-500 p-2 bg-red-500/10 rounded border border-red-500/30">
+              {error}
+              <div className="mt-2 text-xs text-white/70">
+                Make sure Screenpipe is running in your browser. If you don't have Screenpipe, 
+                you can <a 
+                  href="https://www.screenpipe.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-space-nova-yellow underline"
+                >
+                  download it here
+                </a>.
+              </div>
+            </div>
+          )}
+          
+          {!loading && !error && data.length === 0 && (
+            <div className="text-slate-400 p-2">
+              No recent activity found. Make sure Screenpipe is running and capturing your screen or audio.
+            </div>
+          )}
+          
           <ul className="space-y-4">
             {data.map(item => (
               <li key={item.id} className="border-b border-space-stellar-blue/30 pb-2">
