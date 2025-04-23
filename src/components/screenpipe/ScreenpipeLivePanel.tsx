@@ -1,9 +1,11 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { pipe } from "@screenpipe/browser";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
 import { AlertCircle } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "../ui/alert";
+import { generateMockScreenpipeItem } from "@/utils/screenpipeMockData";
 
 type VisionEvent = {
   data: {
@@ -23,6 +25,8 @@ export default function ScreenpipeLivePanel() {
   const [events, setEvents] = useState<any[]>([]);
   const [listening, setListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isMockData, setIsMockData] = useState(false);
+  const mockIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -87,9 +91,68 @@ export default function ScreenpipeLivePanel() {
           console.error("Screenpipe initialization error:", e);
           setError(`Failed to initialize Screenpipe: ${(e as any)?.message || String(e)}`);
           setListening(false);
+          
+          // Fall back to mock data
+          startMockDataStream();
         }
       }
     }
+    
+    // Function to generate mock data when real Screenpipe isn't available
+    function startMockDataStream() {
+      setIsMockData(true);
+      setListening(true);
+      
+      // Generate an initial set of mock events
+      const initialEvents = [
+        { 
+          _type: "vision", 
+          data: { 
+            text: "This is demo screen text content. The Screenpipe app is not connected.", 
+            app_name: "Demo App" 
+          },
+          timestamp: new Date().toISOString()
+        },
+        { 
+          _type: "audio", 
+          choices: [{ text: "This is demo audio transcription. The Screenpipe app is not connected." }],
+          timestamp: new Date().toISOString()
+        }
+      ];
+      setEvents(initialEvents);
+      
+      // Add new mock events periodically
+      mockIntervalRef.current = setInterval(() => {
+        const eventTypes = ["vision", "audio"];
+        const type = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+        
+        if (type === "vision") {
+          const mockItem = generateMockScreenpipeItem("OCR");
+          setEvents(prev => [
+            { 
+              _type: "vision", 
+              data: { 
+                text: mockItem.content.text, 
+                app_name: mockItem.content.app_name,
+              },
+              timestamp: mockItem.timestamp
+            },
+            ...prev.slice(0, 49)
+          ]);
+        } else {
+          const mockItem = generateMockScreenpipeItem("Audio");
+          setEvents(prev => [
+            { 
+              _type: "audio", 
+              choices: [{ text: mockItem.content.transcription }],
+              timestamp: mockItem.timestamp
+            },
+            ...prev.slice(0, 49)
+          ]);
+        }
+      }, 4000);
+    }
+    
     startLive();
 
     return () => {
@@ -97,6 +160,12 @@ export default function ScreenpipeLivePanel() {
       if (audioStop) audioStop();
       isActive = false;
       setListening(false);
+      
+      // Clean up mock data interval
+      if (mockIntervalRef.current) {
+        clearInterval(mockIntervalRef.current);
+        mockIntervalRef.current = null;
+      }
     };
   }, []);
 
@@ -105,7 +174,13 @@ export default function ScreenpipeLivePanel() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>👁️‍🗨️ Live Screen &amp; Audio Events</span>
-          {error && (
+          {isMockData && (
+            <span className="text-xs text-amber-400 flex items-center">
+              <AlertCircle className="h-3 w-3 mr-1" />
+              Demo Mode
+            </span>
+          )}
+          {error && !isMockData && (
             <span className="text-xs text-red-400 flex items-center">
               <AlertCircle className="h-3 w-3 mr-1" />
               Connection Error
@@ -114,25 +189,35 @@ export default function ScreenpipeLivePanel() {
         </CardTitle>
       </CardHeader>
       <CardContent>
+        {error && !isMockData && (
+          <div className="text-red-500 p-2 bg-red-500/10 rounded border border-red-500/30">
+            {error}
+            <div className="mt-2 text-xs text-white/70">
+              Make sure Screenpipe is running in your browser. If you don't have Screenpipe, 
+              you can <a 
+                href="https://www.screenpipe.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-space-nova-yellow underline"
+              >
+                download it here
+              </a>.
+            </div>
+          </div>
+        )}
+        
+        {isMockData && (
+          <Alert className="mb-4 bg-yellow-500/10 border-yellow-500/30">
+            <AlertCircle className="h-4 w-4 text-yellow-400" />
+            <AlertTitle>Demo Mode Active</AlertTitle>
+            <AlertDescription className="text-white/70">
+              You're seeing demonstration data since Screenpipe is not connected.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <ScrollArea className="h-80 pr-2">
           {!listening && !error && <div className="text-slate-400">Connecting…</div>}
-          
-          {error && (
-            <div className="text-red-500 p-2 bg-red-500/10 rounded border border-red-500/30">
-              {error}
-              <div className="mt-2 text-xs text-white/70">
-                Make sure Screenpipe is running in your browser. If you don't have Screenpipe, 
-                you can <a 
-                  href="https://www.screenpipe.com" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-space-nova-yellow underline"
-                >
-                  download it here
-                </a>.
-              </div>
-            </div>
-          )}
           
           <ul className="space-y-3">
             {events.length === 0 && !error && <li className="text-slate-400">Waiting for events…</li>}

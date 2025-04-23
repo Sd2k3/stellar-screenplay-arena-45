@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { pipe } from "@screenpipe/browser";
+import { generateMockScreenpipeItems } from "@/utils/screenpipeMockData";
 
 export interface ScreenpipeItem {
   id: string;
@@ -12,15 +13,18 @@ export interface ScreenpipeItem {
 export function useScreenpipeActivity({ 
   minutes = 5, 
   contentType = "all", 
-  limit = 10 
+  limit = 10,
+  useMockOnFailure = true
 }: { 
   minutes?: number;
   contentType?: "ocr" | "audio" | "ui" | "all";
   limit?: number;
+  useMockOnFailure?: boolean;
 }) {
   const [data, setData] = useState<ScreenpipeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<null | string>(null);
+  const [isMockData, setIsMockData] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -28,6 +32,7 @@ export function useScreenpipeActivity({
     const fetchData = async () => {
       setLoading(true);
       setError(null);
+      setIsMockData(false);
       try {
         // Check if Screenpipe is available
         if (!pipe || typeof pipe.queryScreenpipe !== 'function') {
@@ -35,6 +40,12 @@ export function useScreenpipeActivity({
         }
 
         const since = new Date(Date.now() - minutes * 60 * 1000).toISOString();
+        console.info("queryScreenpipe:", {
+          startTime: since,
+          limit,
+          contentType
+        });
+        
         const results = await pipe.queryScreenpipe({
           startTime: since,
           limit,
@@ -58,7 +69,15 @@ export function useScreenpipeActivity({
         if (!isMounted) return;
         console.error("Screenpipe error:", e);
         setError(`Failed to load Screenpipe data: ${(e as any)?.message || String(e)}`);
-        setData([]);
+        
+        if (useMockOnFailure) {
+          // Use mock data if real Screenpipe fails
+          const mockData = generateMockScreenpipeItems(limit);
+          setData(mockData);
+          setIsMockData(true);
+        } else {
+          setData([]);
+        }
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -72,7 +91,7 @@ export function useScreenpipeActivity({
     return () => {
       isMounted = false;
     };
-  }, [minutes, contentType, limit]);
+  }, [minutes, contentType, limit, useMockOnFailure]);
 
-  return { data, loading, error };
+  return { data, loading, error, isMockData };
 }

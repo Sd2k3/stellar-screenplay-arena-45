@@ -6,6 +6,7 @@ import { ScrollArea } from "../ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { verifyAchievementWithContract } from "@/integrations/supabase/blockchainApi";
 import { AlertCircle } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "../ui/alert";
 
 export interface ScreenpipePanelProps {
   minutes?: number;
@@ -25,7 +26,12 @@ const ScreenpipePanel: React.FC<ScreenpipePanelProps> = ({
   limit = 15,
   contentType = "all",
 }) => {
-  const { data, loading, error } = useScreenpipeActivity({ minutes, limit, contentType });
+  const { data, loading, error, isMockData } = useScreenpipeActivity({ 
+    minutes, 
+    limit, 
+    contentType,
+    useMockOnFailure: true
+  });
   const { toast } = useToast();
 
   // Process Screenpipe data for achievement verification
@@ -55,7 +61,13 @@ const ScreenpipePanel: React.FC<ScreenpipePanelProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>🚀 Recent Screenpipe Activity (last {minutes} min)</span>
-          {error && (
+          {isMockData && (
+            <span className="text-xs text-amber-400 flex items-center">
+              <AlertCircle className="h-3 w-3 mr-1" />
+              Demo Mode
+            </span>
+          )}
+          {error && !isMockData && (
             <span className="text-xs text-red-400 flex items-center">
               <AlertCircle className="h-3 w-3 mr-1" />
               Fetch Error
@@ -67,7 +79,7 @@ const ScreenpipePanel: React.FC<ScreenpipePanelProps> = ({
         <ScrollArea className="h-80 pr-2">
           {loading && <div className="text-slate-400">Loading activity…</div>}
           
-          {error && (
+          {error && !isMockData && (
             <div className="text-red-500 p-2 bg-red-500/10 rounded border border-red-500/30">
               {error}
               <div className="mt-2 text-xs text-white/70">
@@ -82,6 +94,16 @@ const ScreenpipePanel: React.FC<ScreenpipePanelProps> = ({
                 </a>.
               </div>
             </div>
+          )}
+          
+          {isMockData && (
+            <Alert className="mb-4 bg-yellow-500/10 border-yellow-500/30">
+              <AlertCircle className="h-4 w-4 text-yellow-400" />
+              <AlertTitle>Demo Mode Active</AlertTitle>
+              <AlertDescription className="text-white/70">
+                You're seeing demonstration data since Screenpipe is not connected.
+              </AlertDescription>
+            </Alert>
           )}
           
           {!loading && !error && data.length === 0 && (
