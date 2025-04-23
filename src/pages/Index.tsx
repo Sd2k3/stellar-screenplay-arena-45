@@ -429,6 +429,12 @@ const Index = () => {
         <header className="mb-8 text-center">
           <h1 className="text-4xl font-bold mb-2 text-white tracking-tight">Stellar Screenplay Arena</h1>
           <p className="text-lg text-slate-300">Play, earn Stellar tokens, and climb the leaderboard!</p>
+          <a
+            href="/screenpipe"
+            className="inline-block mt-3 px-6 py-2 text-white bg-space-stellar-blue/90 hover:bg-space-stellar-blue transition rounded shadow font-semibold"
+          >
+            🔍 View Screenpipe Activity
+          </a>
         </header>
         
         <div className="mb-4 flex items-center justify-end gap-3">
