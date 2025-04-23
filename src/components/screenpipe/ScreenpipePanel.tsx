@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useScreenpipeActivity } from "@/hooks/useScreenpipeActivity";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
@@ -76,6 +75,41 @@ const ScreenpipePanel: React.FC<ScreenpipePanelProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
+        {error && !isMockData && (
+          <div className="text-red-500 p-2 bg-red-500/10 rounded border border-red-500/30">
+            {error}
+            <div className="mt-2 text-xs text-white/70">
+              Make sure Screenpipe is running in your browser. If you don't have Screenpipe, 
+              you can install it using PowerShell:
+              <pre className="bg-black/30 p-2 my-2 rounded font-mono text-white/90 overflow-x-auto">
+                iwr get.screenpi.pe/cli.ps1 | iex
+              </pre>
+              Then run:
+              <pre className="bg-black/30 p-2 my-2 rounded font-mono text-white/90">
+                screenpipe.exe
+              </pre>
+              Or <a 
+                href="https://www.screenpipe.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-space-nova-yellow underline"
+              >
+                download it manually here
+              </a>.
+            </div>
+          </div>
+        )}
+        
+        {isMockData && (
+          <Alert className="mb-4 bg-yellow-500/10 border-yellow-500/30">
+            <AlertCircle className="h-4 w-4 text-yellow-400" />
+            <AlertTitle>Demo Mode Active</AlertTitle>
+            <AlertDescription className="text-white/70">
+              You're seeing demonstration data since Screenpipe is not connected.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <ScrollArea className="h-80 pr-2">
           {loading && <div className="text-slate-400">Loading activity…</div>}
           

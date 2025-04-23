@@ -119,17 +119,25 @@ export default function ScreenpipeMeetingSummarizer() {
       </CardHeader>
       <CardContent>
         {error && !isMockData && (
-          <div className="text-red-500 p-2 bg-red-500/10 rounded border border-red-500/30 mb-4">
+          <div className="text-red-500 p-2 bg-red-500/10 rounded border border-red-500/30">
             {error}
             <div className="mt-2 text-xs text-white/70">
               Make sure Screenpipe is running in your browser. If you don't have Screenpipe, 
-              you can <a 
+              you can install it using PowerShell:
+              <pre className="bg-black/30 p-2 my-2 rounded font-mono text-white/90 overflow-x-auto">
+                iwr get.screenpi.pe/cli.ps1 | iex
+              </pre>
+              Then run:
+              <pre className="bg-black/30 p-2 my-2 rounded font-mono text-white/90">
+                screenpipe.exe
+              </pre>
+              Or <a 
                 href="https://www.screenpipe.com" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-space-nova-yellow underline"
               >
-                download it here
+                download it manually here
               </a>.
             </div>
           </div>
