@@ -22,7 +22,7 @@ export default function ScreenpipeVerificationPanel({
   walletAddress,
   onVerificationComplete
 }: ScreenpipeVerificationPanelProps) {
-  const { fetchScreenpipeData, recentScreenpipeData, verifying, error } = useAchievementVerification();
+  const { fetchScreenpipeData, recentScreenpipeData, verifying, error, verifyAchievement } = useAchievementVerification();
   const [isMockData, setIsMockData] = useState(false);
   const { toast } = useToast();
   const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
@@ -53,7 +53,7 @@ export default function ScreenpipeVerificationPanel({
     if (!selectedAchievement || !walletAddress) return;
     
     try {
-      const { verifyAchievement } = useAchievementVerification();
+      // Use the verifyAchievement from the hook that was initialized at the top level
       const verified = await verifyAchievement(selectedAchievement, walletAddress);
       
       if (verified && onVerificationComplete) {
