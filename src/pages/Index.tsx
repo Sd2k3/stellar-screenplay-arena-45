@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon, RocketIcon, TrophyIcon, BarChart3Icon, WalletIcon } from "lucide-react";
+import { InfoIcon, RocketIcon, TrophyIcon, BarChart3Icon, WalletIcon, Shield } from "lucide-react";
+import { Link } from "react-router-dom";
 import GameCanvas from "@/components/game/GameCanvas";
 import TokenBalance from "@/components/blockchain/TokenBalance";
 import AchievementCard, { Achievement } from "@/components/blockchain/AchievementCard";
@@ -398,12 +399,20 @@ const Index = () => {
         <header className="mb-8 text-center">
           <h1 className="text-4xl font-bold mb-2 text-white tracking-tight">Stellar Screenplay Arena</h1>
           <p className="text-lg text-slate-300">Play, earn Stellar tokens, and climb the leaderboard!</p>
-          <a
-            href="/screenpipe"
-            className="inline-block mt-3 px-6 py-2 text-white bg-space-stellar-blue/90 hover:bg-space-stellar-blue transition rounded shadow font-semibold"
-          >
-            🔍 View Screenpipe Activity
-          </a>
+          <div className="flex justify-center gap-3 mt-3">
+            <Link
+              to="/screenpipe"
+              className="inline-block px-6 py-2 text-white bg-space-stellar-blue/90 hover:bg-space-stellar-blue transition rounded shadow font-semibold"
+            >
+              🔍 Screenpipe Activity
+            </Link>
+            <Link
+              to="/verify"
+              className="inline-block px-6 py-2 text-white bg-space-cosmic-purple/90 hover:bg-space-cosmic-purple transition rounded shadow font-semibold"
+            >
+              <Shield className="inline-block h-4 w-4 mr-1" /> Verify Achievements
+            </Link>
+          </div>
         </header>
         
         <div className="mb-4 flex items-center justify-end gap-3">

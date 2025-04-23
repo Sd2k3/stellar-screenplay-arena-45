@@ -3,6 +3,9 @@ import React from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { useAchievementVerification } from "@/hooks/useAchievementVerification";
+import { Check, Loader2 } from "lucide-react";
 
 export interface Achievement {
   id: string;
@@ -17,12 +20,18 @@ export interface Achievement {
 interface AchievementCardProps {
   achievement: Achievement;
   className?: string;
+  walletAddress?: string | null;
+  onVerificationComplete?: (verified: boolean) => void;
 }
 
 const AchievementCard: React.FC<AchievementCardProps> = ({
   achievement,
   className,
+  walletAddress = null,
+  onVerificationComplete
 }) => {
+  const { verifyAchievement, verifying } = useAchievementVerification();
+  
   const statusColors = {
     pending: "bg-yellow-500 hover:bg-yellow-600",
     verified: "bg-green-500 hover:bg-green-600",
@@ -33,6 +42,13 @@ const AchievementCard: React.FC<AchievementCardProps> = ({
     pending: "Pending Verification",
     verified: "Verified by Screenpipe",
     rejected: "Verification Failed",
+  };
+
+  const handleVerify = async () => {
+    const verified = await verifyAchievement(achievement, walletAddress);
+    if (onVerificationComplete) {
+      onVerificationComplete(verified);
+    }
   };
 
   return (
@@ -71,6 +87,27 @@ const AchievementCard: React.FC<AchievementCardProps> = ({
             </span>
           )}
         </div>
+        
+        {achievement.completed && achievement.verificationStatus === "pending" && walletAddress && (
+          <Button 
+            onClick={handleVerify}
+            disabled={verifying}
+            size="sm" 
+            className="w-full mt-3 bg-space-stellar-blue hover:bg-space-stellar-blue/80"
+          >
+            {verifying ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Verifying...
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4 mr-2" />
+                Verify with Screenpipe
+              </>
+            )}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
