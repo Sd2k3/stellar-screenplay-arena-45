@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import { pipe } from "@screenpipe/browser";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
-import { AlertCircle, InfoCircle } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";  // Changed from InfoCircle to Info
 import { generateMockTranscriptChunk } from "@/utils/screenpipeMockData";
 import { Alert, AlertTitle, AlertDescription } from "../ui/alert";
 
