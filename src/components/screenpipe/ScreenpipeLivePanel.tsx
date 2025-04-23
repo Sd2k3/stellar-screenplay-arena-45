@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { pipe } from "@screenpipe/browser";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
+import { AlertCircle } from "lucide-react";
 
 type VisionEvent = {
   data: {
@@ -21,6 +22,7 @@ type AudioEvent = {
 export default function ScreenpipeLivePanel() {
   const [events, setEvents] = useState<any[]>([]);
   const [listening, setListening] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -28,52 +30,72 @@ export default function ScreenpipeLivePanel() {
     let audioStop: (() => void) | null = null;
 
     async function startLive() {
-      setListening(true);
-      // Listen for vision events
-      const visionAsync = (async () => {
-        try {
-          for await (const event of pipe.streamVision(true)) {
-            if (!isActive) break;
-            setEvents(prev => [
-              { ...event, _type: "vision", timestamp: event.data.timestamp || new Date().toISOString() },
-              ...prev.slice(0, 49),
-            ]);
-          }
-        } catch (e) {
-          setEvents(prev => [
-            { _type: "vision", data: { text: "Error: " + (e as any)?.message } },
-            ...prev
-          ]);
+      try {
+        if (!pipe || typeof pipe.streamVision !== 'function' || typeof pipe.streamTranscriptions !== 'function') {
+          throw new Error("Screenpipe is not properly initialized");
         }
-      })();
 
-      // Listen for audio transcriptions
-      const audioAsync = (async () => {
-        try {
-          for await (const chunk of pipe.streamTranscriptions()) {
-            if (!isActive) break;
-            setEvents(prev => [
-              { ...chunk, _type: "audio", timestamp: chunk?.metadata?.timestamp || new Date().toISOString() },
-              ...prev.slice(0, 49),
-            ]);
+        setListening(true);
+        // Listen for vision events
+        const visionAsync = (async () => {
+          try {
+            for await (const event of pipe.streamVision(true)) {
+              if (!isActive) break;
+              setEvents(prev => [
+                { ...event, _type: "vision", timestamp: event.data.timestamp || new Date().toISOString() },
+                ...prev.slice(0, 49),
+              ]);
+            }
+          } catch (e) {
+            if (isActive) {
+              console.error("Vision stream error:", e);
+              setEvents(prev => [
+                { _type: "vision", data: { text: "Error: " + (e as any)?.message || String(e) } },
+                ...prev
+              ]);
+            }
           }
-        } catch (e) {
-          setEvents(prev => [
-            { _type: "audio", choices: [{ text: "Error: " + (e as any)?.message }] },
-            ...prev
-          ]);
-        }
-      })();
+        })();
 
-      // Provide a way to stop on unmount
-      visionStop = () => { isActive = false; };
-      audioStop = () => { isActive = false; };
+        // Listen for audio transcriptions
+        const audioAsync = (async () => {
+          try {
+            for await (const chunk of pipe.streamTranscriptions()) {
+              if (!isActive) break;
+              setEvents(prev => [
+                { ...chunk, _type: "audio", timestamp: chunk?.metadata?.timestamp || new Date().toISOString() },
+                ...prev.slice(0, 49),
+              ]);
+            }
+          } catch (e) {
+            if (isActive) {
+              console.error("Audio stream error:", e);
+              setEvents(prev => [
+                { _type: "audio", choices: [{ text: "Error: " + (e as any)?.message || String(e) }] },
+                ...prev
+              ]);
+              setError("Failed to connect to Screenpipe audio stream");
+            }
+          }
+        })();
+
+        // Provide a way to stop on unmount
+        visionStop = () => { isActive = false; };
+        audioStop = () => { isActive = false; };
+      } catch (e) {
+        if (isActive) {
+          console.error("Screenpipe initialization error:", e);
+          setError(`Failed to initialize Screenpipe: ${(e as any)?.message || String(e)}`);
+          setListening(false);
+        }
+      }
     }
     startLive();
 
     return () => {
       if (visionStop) visionStop();
       if (audioStop) audioStop();
+      isActive = false;
       setListening(false);
     };
   }, []);
@@ -81,13 +103,39 @@ export default function ScreenpipeLivePanel() {
   return (
     <Card className="w-full border border-space-stellar-blue bg-black/30">
       <CardHeader>
-        <CardTitle>👁️‍🗨️ Live Screen &amp; Audio Events</CardTitle>
+        <CardTitle className="flex items-center justify-between">
+          <span>👁️‍🗨️ Live Screen &amp; Audio Events</span>
+          {error && (
+            <span className="text-xs text-red-400 flex items-center">
+              <AlertCircle className="h-3 w-3 mr-1" />
+              Connection Error
+            </span>
+          )}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-80 pr-2">
-          {!listening ? <div className="text-slate-400">Connecting…</div> : null}
+          {!listening && !error && <div className="text-slate-400">Connecting…</div>}
+          
+          {error && (
+            <div className="text-red-500 p-2 bg-red-500/10 rounded border border-red-500/30">
+              {error}
+              <div className="mt-2 text-xs text-white/70">
+                Make sure Screenpipe is running in your browser. If you don't have Screenpipe, 
+                you can <a 
+                  href="https://www.screenpipe.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-space-nova-yellow underline"
+                >
+                  download it here
+                </a>.
+              </div>
+            </div>
+          )}
+          
           <ul className="space-y-3">
-            {events.length === 0 && <li className="text-slate-400">Waiting for events…</li>}
+            {events.length === 0 && !error && <li className="text-slate-400">Waiting for events…</li>}
             {events.map((item, idx) => (
               <li key={idx} className="border-b border-space-stellar-blue/20 pb-2 text-white">
                 <div className="text-xs opacity-70 mb-1">

@@ -14,7 +14,7 @@ export interface ScreenpipePanelProps {
 }
 
 // Define the typePretty object to display human-readable content types
-const typePretty = {
+const typePretty: Record<string, string> = {
   "OCR": "Screen Text",
   "Audio": "Voice/Audio",
   "UI": "UI Interaction"

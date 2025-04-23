@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { ScrollArea } from "../ui/scroll-area";
+import { AlertCircle } from "lucide-react";
 
 type Item = {
   id: string;
@@ -26,6 +27,11 @@ export default function ScreenpipeSearchPanel() {
     setResults([]);
 
     try {
+      // Check if Screenpipe is available
+      if (!pipe || typeof pipe.queryScreenpipe !== 'function') {
+        throw new Error("Screenpipe is not properly initialized");
+      }
+
       const now = new Date().toISOString();
       const startTime = new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString();
       const resp = await pipe.queryScreenpipe({
@@ -36,12 +42,18 @@ export default function ScreenpipeSearchPanel() {
         limit: 30,
         includeFrames: true,
       });
-      setResults((resp.data || []).map((x: any, idx: number) => ({
-        ...x,
-        id: x.id || idx + "-" + (x.type || "unknown"),
-      })));
+      
+      if (!resp || !resp.data) {
+        setResults([]);
+      } else {
+        setResults((resp.data || []).map((x: any, idx: number) => ({
+          ...x,
+          id: x.id || idx + "-" + (x.type || "unknown"),
+        })));
+      }
     } catch (e: any) {
-      setErr(e.message || "Unknown error searching screenpipe data");
+      console.error("Screenpipe search error:", e);
+      setErr(e?.message || "Unknown error searching screenpipe data");
     } finally {
       setLoading(false);
     }
@@ -50,7 +62,15 @@ export default function ScreenpipeSearchPanel() {
   return (
     <Card className="w-full border border-space-stellar-blue bg-black/30">
       <CardHeader>
-        <CardTitle>🔎 Search Screen or Audio Content</CardTitle>
+        <CardTitle className="flex items-center justify-between">
+          <span>🔎 Search Screen or Audio Content</span>
+          {err && (
+            <span className="text-xs text-red-400 flex items-center">
+              <AlertCircle className="h-3 w-3 mr-1" />
+              Search Error
+            </span>
+          )}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSearch} className="flex items-center gap-2 mb-4">
@@ -64,10 +84,28 @@ export default function ScreenpipeSearchPanel() {
             {loading ? "Searching…" : "Search"}
           </Button>
         </form>
-        {err && <div className="text-red-500 mb-2">{err}</div>}
+        
+        {err && (
+          <div className="text-red-500 p-2 bg-red-500/10 rounded border border-red-500/30 mb-2">
+            {err}
+            <div className="mt-2 text-xs text-white/70">
+              Make sure Screenpipe is running in your browser. If you don't have Screenpipe, 
+              you can <a 
+                href="https://www.screenpipe.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-space-nova-yellow underline"
+              >
+                download it here
+              </a>.
+            </div>
+          </div>
+        )}
+        
         <ScrollArea className="h-60 pr-2">
           <ul className="space-y-4">
-            {results.length === 0 && !loading && <li className="text-slate-400">No results yet.</li>}
+            {results.length === 0 && !loading && !err && <li className="text-slate-400">No results yet.</li>}
+            {loading && <li className="text-slate-400">Searching...</li>}
             {results.map(item => (
               <li key={item.id} className="border-b border-space-stellar-blue/20 pb-2 text-white">
                 <div className="text-xs opacity-70">
