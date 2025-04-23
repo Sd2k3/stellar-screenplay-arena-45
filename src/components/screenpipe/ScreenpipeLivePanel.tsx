@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import { pipe } from "@screenpipe/browser";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
@@ -6,6 +5,7 @@ import { ScrollArea } from "../ui/scroll-area";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "../ui/alert";
 import { generateMockScreenpipeItem } from "@/utils/screenpipeMockData";
+import { ScreenpipeInstaller } from "./ScreenpipeInstaller";
 
 type VisionEvent = {
   data: {
@@ -193,15 +193,8 @@ export default function ScreenpipeLivePanel() {
           <div className="text-red-500 p-2 bg-red-500/10 rounded border border-red-500/30">
             {error}
             <div className="mt-2 text-xs text-white/70">
-              Make sure Screenpipe is running in your browser. If you don't have Screenpipe, 
-              you can install it using PowerShell:
-              <pre className="bg-black/30 p-2 my-2 rounded font-mono text-white/90 overflow-x-auto">
-                iwr get.screenpi.pe/cli.ps1 | iex
-              </pre>
-              Then run:
-              <pre className="bg-black/30 p-2 my-2 rounded font-mono text-white/90">
-                screenpipe.exe
-              </pre>
+              Make sure Screenpipe is running in your browser. If you don't have Screenpipe:
+              <ScreenpipeInstaller />
               Or <a 
                 href="https://www.screenpipe.com" 
                 target="_blank" 
@@ -220,6 +213,7 @@ export default function ScreenpipeLivePanel() {
             <AlertTitle>Demo Mode Active</AlertTitle>
             <AlertDescription className="text-white/70">
               You're seeing demonstration data since Screenpipe is not connected.
+              <ScreenpipeInstaller />
             </AlertDescription>
           </Alert>
         )}
