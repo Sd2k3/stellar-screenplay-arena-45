@@ -101,11 +101,10 @@ export function useAchievementVerification() {
         const result = await verifyAchievementWithContract({
           walletAddress,
           achievementId: achievement.id,
-          achievementTitle: achievement.title,
           contractAddress: contractAddress || "0x123..." // Use default or provided address
         });
         
-        if (result && result.success) {
+        if (result && result.verified) {
           toast({
             title: "Achievement Verified!",
             description: `Your "${achievement.title}" achievement has been verified on-chain.`,
