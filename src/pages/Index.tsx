@@ -486,27 +486,31 @@ const Index = () => {
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="achievements" className="mt-2 space-y-3">
-                <ScrollArea className="max-h-[410px] w-full pr-2">
-                  <div className="flex flex-col gap-3">
-                    {achievements.map(achievement => (
-                      <AchievementCard 
-                        key={achievement.id} 
-                        achievement={achievement}
-                        className="border border-space-stellar-blue bg-black/30 text-white"
-                      />
-                    ))}
-                  </div>
-                </ScrollArea>
+              <TabsContent value="achievements" className="mt-2">
+                <div className="border border-space-stellar-blue bg-black/30 rounded-md p-3">
+                  <ScrollArea className="h-[350px] pr-3" style={{ position: "relative" }}>
+                    <div className="flex flex-col gap-3 pr-2">
+                      {achievements.map(achievement => (
+                        <AchievementCard 
+                          key={achievement.id} 
+                          achievement={achievement}
+                          className="border border-space-stellar-blue bg-black/30 text-white"
+                        />
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
               </TabsContent>
               
               <TabsContent value="leaderboard" className="mt-2">
-                <ScrollArea className="max-h-[410px] w-full pr-2">
-                  <Leaderboard 
-                    entries={leaderboardEntries}
-                    className="border border-space-stellar-blue bg-black/30 text-white"
-                  />
-                </ScrollArea>
+                <div className="border border-space-stellar-blue bg-black/30 rounded-md p-3">
+                  <ScrollArea className="h-[350px] pr-3" style={{ position: "relative" }}>
+                    <Leaderboard 
+                      entries={leaderboardEntries}
+                      className="text-white"
+                    />
+                  </ScrollArea>
+                </div>
               </TabsContent>
             </Tabs>
             

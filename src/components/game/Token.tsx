@@ -17,10 +17,11 @@ const Token: React.FC<TokenProps> = ({ position, collected, special = false }) =
         transform: `translate(${position.x}px, ${position.y}px)`,
         width: 30,
         height: 30,
+        filter: special ? "drop-shadow(0 0 8px #FFC107)" : "drop-shadow(0 0 3px #FBBF24)",
       }}
     >
       <svg
-        className={`w-full h-full ${special ? "text-amber-400 filter drop-shadow-[0_0_3px_#FFC107]" : "text-space-nova-yellow"}`}
+        className={`w-full h-full ${special ? "text-amber-400" : "text-space-nova-yellow"}`}
         viewBox="0 0 24 24"
         fill="currentColor"
       >
