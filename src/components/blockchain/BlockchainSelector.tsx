@@ -39,35 +39,61 @@ const BlockchainSelector: React.FC<BlockchainSelectorProps> = ({
     const fetchNetworks = async () => {
       if (typeof window.ethereum !== 'undefined') {
         try {
-          // Get all available chain IDs
-          const chainIds = await window.ethereum.request({
-            method: 'wallet_getPermissions',
+          // Request the user's permission to view their accounts and networks
+          await window.ethereum.request({
+            method: 'eth_requestAccounts'
           });
           
-          // Get details for each chain
-          const networksInfo = await Promise.all(
-            chainIds.map(async (permission: any) => {
-              try {
-                const chainId = await window.ethereum.request({
-                  method: 'eth_chainId',
-                });
-                
-                // Get network details
-                const networkInfo: NetworkInfo = {
-                  chainId,
-                  chainName: getNetworkName(chainId),
-                };
-                
-                return networkInfo;
-              } catch (error) {
-                console.error('Error fetching network details:', error);
-                return null;
-              }
-            })
-          );
+          // Get current chain ID
+          const currentChainId = await window.ethereum.request({
+            method: 'eth_chainId'
+          });
+          
+          // Get network details for well-known networks
+          const wellKnownNetworks: NetworkInfo[] = [
+            {
+              chainId: '0x1',
+              chainName: 'Ethereum Mainnet',
+            },
+            {
+              chainId: '0x5',
+              chainName: 'Goerli Testnet',
+            },
+            {
+              chainId: '0x89',
+              chainName: 'Polygon Mainnet',
+            },
+            {
+              chainId: '0x13881',
+              chainName: 'Mumbai Testnet',
+            },
+            // Filter to only include networks that are actually configured in MetaMask
+          ].filter(async (network) => {
+            try {
+              await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: network.chainId }],
+              });
+              return true;
+            } catch (error: any) {
+              // If error code 4902, network is not available in MetaMask
+              if (error.code === 4902) return false;
+              return true; // Include network if error is different (might be user rejection)
+            }
+          });
 
-          // Filter out null values and set networks
-          setNetworks(networksInfo.filter((n): n is NetworkInfo => n !== null));
+          // Switch back to original network
+          if (currentChainId) {
+            await window.ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: currentChainId }],
+            });
+          }
+
+          // Set the networks
+          const availableNetworks = await Promise.all(wellKnownNetworks);
+          setNetworks(availableNetworks);
+
         } catch (error) {
           console.error('Error fetching networks:', error);
         }
@@ -80,14 +106,8 @@ const BlockchainSelector: React.FC<BlockchainSelectorProps> = ({
 
   // Helper function to get network name from chain ID
   const getNetworkName = (chainId: string): string => {
-    const networks: { [key: string]: string } = {
-      '0x1': 'Ethereum Mainnet',
-      '0x5': 'Goerli Testnet',
-      '0x13881': 'Mumbai Testnet',
-      '0x89': 'Polygon Mainnet',
-      // Add more networks as needed
-    };
-    return networks[chainId] || `Chain ${parseInt(chainId, 16)}`;
+    const network = networks.find(n => n.chainId === chainId);
+    return network?.chainName || `Chain ${parseInt(chainId, 16)}`;
   };
 
   return (
