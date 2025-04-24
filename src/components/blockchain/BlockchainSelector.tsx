@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from "react";
-import { NetworkType } from "@/integrations/supabase/types";
 import { Wifi, WifiOff } from "lucide-react";
 import {
   Select,
@@ -129,4 +128,3 @@ const BlockchainSelector: React.FC<BlockchainSelectorProps> = ({
 };
 
 export default BlockchainSelector;
-
